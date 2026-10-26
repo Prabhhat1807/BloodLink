@@ -1,0 +1,1817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BloodLink — Intelligent Blood Donation and Emergency Finder platform connecting donors with patients and hospitals in real-time.">
+  <title>BloodLink — Blood Donation & Emergency Finder</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body id="home">
+
+  <!-- ========================================================
+       Navigation Bar
+       ======================================================== -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="brand-logo">
+        <span class="brand-icon">🩸</span>
+        <div class="brand-title">
+          <span class="brand-name">BloodLink</span>
+          <span class="brand-subtitle">Blood Donation & Emergency Finder</span>
+        </div>
+      </a>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="/" id="nav-link-home">Home</a></li>
+          {% if session.get('user_id') and session.get('user_role') == 'DONOR' %}
+            <li><a href="/donor/dashboard" id="nav-link-dashboard" class="nav-auth-link">My Dashboard</a></li>
+            <li>
+              <span class="dashboard-role-tag role-tag-donor" style="margin-bottom:0; font-size: 0.8rem; padding: 0.25rem 0.65rem;">
+                🩸 DONOR
+              </span>
+            </li>
+            <li><a href="/logout" class="nav-auth-link" id="nav-link-logout">🚪 Logout</a></li>
+          {% elif session.get('user_id') and session.get('user_role') == 'RECIPIENT' %}
+            <li><a href="/recipient/dashboard" id="nav-link-dashboard" class="nav-auth-link">My Dashboard</a></li>
+            <li>
+              <span class="dashboard-role-tag role-tag-recipient" style="margin-bottom:0; font-size: 0.8rem; padding: 0.25rem 0.65rem;">
+                🏥 RECIPIENT
+              </span>
+            </li>
+            <li><a href="/logout" class="nav-auth-link" id="nav-link-logout">🚪 Logout</a></li>
+          {% elif session.get('user_id') and session.get('user_role') == 'ADMIN' %}
+            <li><a href="/admin/dashboard" id="nav-link-dashboard" class="nav-auth-link">Admin Dashboard</a></li>
+            <li>
+              <span class="placeholder-role-badge placeholder-badge-admin" style="margin-bottom:0; font-size: 0.8rem; padding: 0.25rem 0.65rem;">
+                🛡️ ADMIN
+              </span>
+            </li>
+            <li><a href="/logout" class="nav-auth-link" id="nav-link-logout">🚪 Logout</a></li>
+          {% else %}
+            <li><a href="#dashboard-overview" id="nav-link-overview">Platform Stats</a></li>
+            <li><a href="#how-it-works" id="nav-link-how-it-works">How It Works</a></li>
+            <li><a href="#compatibility" id="nav-link-compatibility">Compatibility</a></li>
+            <li><a href="#emergency-requests" class="nav-emergency-btn" id="nav-link-emergency">🚨 Emergency Board</a></li>
+            <li><a href="/login" class="nav-auth-link" id="nav-link-login">🔐 Login</a></li>
+            <li><a href="/signup" class="nav-auth-btn" id="nav-link-signup">✨ Sign Up</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ========================================================
+       Hero Section
+       ======================================================== -->
+  <section class="hero-section">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="hero-badge-dot"></span>
+          Emergency Lifeline Network
+        </div>
+        <h1 class="hero-title">
+          Connecting Life Savers With Those in <span>Critical Need</span>
+        </h1>
+        <p class="hero-description">
+          BloodLink is a fast, intelligent platform matching voluntary blood donors with recipients and hospitals in real time using medical compatibility algorithms and proximity scoring.
+        </p>
+        <div class="hero-actions">
+          {% if session.get('user_id') and session.get('user_role') == 'RECIPIENT' %}
+            <a href="/recipient/dashboard#section-search-donors" class="btn btn-primary" id="cta-find-donors">
+              🔍 Find Blood Donors
+            </a>
+            <a href="/recipient/dashboard#section-create-emergency" class="btn btn-secondary" id="cta-emergency">
+              🚨 Emergency Blood Request
+            </a>
+          {% elif session.get('user_id') and session.get('user_role') == 'DONOR' %}
+            <a href="/donor/dashboard" class="btn btn-primary" id="cta-find-donors">
+              🩸 My Donor Dashboard
+            </a>
+            <a href="/donor/dashboard#emergency-feed" class="btn btn-secondary" id="cta-emergency">
+              🚨 View Emergency Requests
+            </a>
+          {% elif session.get('user_id') and session.get('user_role') == 'ADMIN' %}
+            <a href="/admin/dashboard" class="btn btn-primary" id="cta-find-donors">
+              🛡️ Admin Dashboard
+            </a>
+            <a href="/admin/dashboard" class="btn btn-secondary" id="cta-emergency">
+              🚨 Emergency Operations
+            </a>
+          {% else %}
+            <a href="/login" class="btn btn-primary" id="cta-find-donors">
+              🔍 Find Blood Donors
+            </a>
+            <a href="/login" class="btn btn-secondary" id="cta-emergency">
+              🚨 Emergency Blood Request
+            </a>
+          {% endif %}
+        </div>
+        <div class="hero-stats-strip">
+          <div class="stat-item">
+            <span class="stat-label">Matching Algorithm</span>
+            <span class="stat-value">Compatibility &amp; Proximity</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Sorting Method</span>
+            <span class="stat-value">Bubble Sort (Score-based)</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Response Mode</span>
+            <span class="stat-value">Real-Time Urgent Dispatch</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Visual Preview Card -->
+      <div class="hero-visual">
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <div>
+              <strong style="color: var(--primary-dark-red); font-size: 1.1rem;">Live Matching Preview</strong>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">Algorithm in action</div>
+            </div>
+            <span class="card-tag">Urgent Match</span>
+          </div>
+
+          <div class="hero-match-item">
+            <div class="donor-info-left">
+              <span class="blood-badge">A+</span>
+              <div>
+                <div class="donor-name">Compatible Donor (Verified)</div>
+                <div class="donor-loc">Exact Blood Match &bull; Same City</div>
+              </div>
+            </div>
+            <div class="match-score">
+              <span class="score-num">80 pts</span>
+              <span class="score-text">Rank #1 Match</span>
+            </div>
+          </div>
+
+          <div class="hero-match-item" style="border-left-color: #dc2626;">
+            <div class="donor-info-left">
+              <span class="blood-badge" style="background-color: #991b1b;">O+</span>
+              <div>
+                <div class="donor-name">Compatible Donor (Verified)</div>
+                <div class="donor-loc">Compatible Blood &bull; Same City</div>
+              </div>
+            </div>
+            <div class="match-score">
+              <span class="score-num">60 pts</span>
+              <span class="score-text">Rank #2 Match</span>
+            </div>
+          </div>
+
+          <div class="hero-match-item" style="border-left-color: #64748b; margin-bottom: 0;">
+            <div class="donor-info-left">
+              <span class="blood-badge" style="background-color: #475569;">O-</span>
+              <div>
+                <div class="donor-name">Universal Donor (Verified)</div>
+                <div class="donor-loc">Universal Match &bull; Nearby District</div>
+              </div>
+            </div>
+            <div class="match-score">
+              <span class="score-num">40 pts</span>
+              <span class="score-text">Rank #3 Match</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Dashboard Overview (Module 0: Platform Telemetry)
+       ======================================================== -->
+  <section class="section section-dashboard" id="dashboard-overview">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag" style="color: var(--primary-dark-red);">Platform Overview</div>
+        <h2 class="section-title">Live System Dashboard</h2>
+        <p class="section-subtitle">
+          Real-time telemetry tracking voluntary blood donors, immediate availability, and active hospital emergency requests.
+        </p>
+      </div>
+
+      <div class="dashboard-container">
+        <!-- Dashboard Header & Refresh Action -->
+        <div class="dashboard-header-bar">
+          <div class="dashboard-header-info">
+            <span class="dashboard-live-indicator">
+              <span class="live-dot"></span> Real-Time Network Telemetry
+            </span>
+            <span class="dashboard-sync-time" id="dash-last-updated">Updated: Just now</span>
+          </div>
+          <button type="button" class="btn btn-secondary btn-refresh-feed" id="btn-refresh-dashboard">
+            🔄 Refresh Dashboard
+          </button>
+        </div>
+
+        <!-- Dashboard Error State -->
+        <div class="results-error" id="dash-error-state" style="display: none;">
+          <div class="error-icon">⚠️</div>
+          <div class="error-content">
+            <h4>Dashboard Telemetry Unavailable</h4>
+            <p id="dash-error-msg">Could not load live metrics from the server.</p>
+          </div>
+        </div>
+
+        <!-- 4 Component Layout -->
+        <div class="dashboard-grid">
+          <!-- Component 1: Total Donors -->
+          <div class="dash-stat-card card-total-donors">
+            <div class="dash-stat-top">
+              <div class="dash-stat-icon">👥</div>
+              <span class="dash-stat-tag">Registered</span>
+            </div>
+            <div class="dash-stat-body">
+              <div class="dash-stat-val" id="dash-total-donors">--</div>
+              <div class="dash-stat-label">Total Registered Donors</div>
+              <p class="dash-stat-sub">Volunteers enrolled across all cities</p>
+            </div>
+            <div class="dash-card-footer">
+              <a href="#donor-management" class="dash-link">Manage Directory &rarr;</a>
+            </div>
+          </div>
+
+          <!-- Component 2: Available Donors -->
+          <div class="dash-stat-card card-available-donors">
+            <div class="dash-stat-top">
+              <div class="dash-stat-icon icon-available">🟢</div>
+              <span class="dash-stat-tag tag-available">Available</span>
+            </div>
+            <div class="dash-stat-body">
+              <div class="dash-stat-val val-available" id="dash-available-donors">--</div>
+              <div class="dash-stat-label">Currently Available Donors</div>
+              <p class="dash-stat-sub">Voluntary donors ready for urgent calls</p>
+            </div>
+            <div class="dash-card-footer">
+              <a href="#find-donors" class="dash-link">Find Compatible Donors &rarr;</a>
+            </div>
+          </div>
+
+          <!-- Component 3: Active Emergency Requests -->
+          <div class="dash-stat-card card-active-emergencies">
+            <div class="dash-stat-top">
+              <div class="dash-stat-icon icon-urgent">🚨</div>
+              <span class="dash-stat-tag tag-urgent">Urgent Need</span>
+            </div>
+            <div class="dash-stat-body">
+              <div class="dash-stat-val val-urgent" id="dash-active-emergencies">--</div>
+              <div class="dash-stat-label">Active Emergency Requests</div>
+              <p class="dash-stat-sub">Cases requiring immediate matching</p>
+            </div>
+            <div class="dash-card-footer">
+              <a href="#emergency-requests" class="dash-link">View Emergency Board &rarr;</a>
+            </div>
+          </div>
+
+          <!-- Component 4: Recent Emergency Requests (List Card) -->
+          <div class="dash-recent-card" id="dash-recent-card-container">
+            <div class="dash-recent-header">
+              <div class="recent-header-left">
+                <span class="recent-header-icon">📋</span>
+                <div>
+                  <h3 class="dash-recent-title">Recent Emergency Requests</h3>
+                  <p class="dash-recent-sub">Latest five hospital blood dispatches and statuses</p>
+                </div>
+              </div>
+              <span class="dash-stat-tag" id="dash-recent-count-tag">Latest 5 Cases</span>
+            </div>
+
+            <!-- Loading State -->
+            <div class="results-loading dash-loading" id="dash-recent-loading" style="display: none;">
+              <div class="loading-spinner"></div>
+              <p>Loading recent emergency dispatches...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div class="results-empty dash-empty" id="dash-recent-empty" style="display: none;">
+              <div class="empty-icon">🎉</div>
+              <h3>No Recent Emergency Requests</h3>
+              <p>No emergency blood requests have been logged in the system yet.</p>
+            </div>
+
+            <!-- Recent Requests Table Container -->
+            <div class="dash-recent-table-wrap" id="dash-recent-table-wrap">
+              <table class="dash-recent-table" id="dash-recent-table">
+                <thead>
+                  <tr>
+                    <th>Req ID</th>
+                    <th>Blood Group</th>
+                    <th>Units</th>
+                    <th>Priority Level</th>
+                    <th>Hospital / Location</th>
+                    <th>Status</th>
+                    <th>Date Posted</th>
+                  </tr>
+                </thead>
+                <tbody id="dash-recent-tbody">
+                  <!-- Populated dynamically via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       How It Works Section
+       ======================================================== -->
+  <section class="section section-alt" id="how-it-works">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Workflow</div>
+        <h2 class="section-title">How BloodLink Works</h2>
+        <p class="section-subtitle">
+          Designed for high-speed coordination during critical hospital and medical emergencies.
+        </p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <div class="step-icon">📋</div>
+          <h3 class="step-title">1. Search or Request</h3>
+          <p class="step-description">
+            Search for available blood donors by blood group and location, or submit a direct emergency request linked to a hospital.
+          </p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <div class="step-icon">⚙️</div>
+          <h3 class="step-title">2. Smart Matching</h3>
+          <p class="step-description">
+            Our algorithm checks biological compatibility using hash maps and calculates scores based on blood compatibility and location.
+          </p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <div class="step-icon">🚑</div>
+          <h3 class="step-title">3. Instant Connection</h3>
+          <p class="step-description">
+            Bubble sort ranks the top-matching donors at the top of the list, enabling immediate contact and rapid life-saving blood transfers.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Core Pillars & Feature Modules
+       ======================================================== -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Core Services</div>
+        <h2 class="section-title">Explore Platform Features</h2>
+        <p class="section-subtitle">
+          Everything patients, voluntary donors, and hospitals need in one unified system.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1: Find Donors -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-box">🔍</div>
+            <h3 class="feature-title">Find Blood Donors</h3>
+            <p class="feature-text">
+              Locate active voluntary donors by selecting a required blood group and city. The system filters available donors and calculates matching scores automatically.
+            </p>
+          </div>
+          <a href="#find-donors" class="feature-btn">Open Donor Search &rarr;</a>
+        </div>
+
+        <!-- Feature 2: Donor Registration -->
+        <div class="feature-card highlight">
+          <div>
+            <div class="feature-icon-box" style="background-color: var(--primary-dark-red); color: #fff;">🤝</div>
+            <h3 class="feature-title">Register as Donor</h3>
+            <p class="feature-text">
+              Join our database of voluntary life-savers. Provide your blood group, contact information, and location to be alerted whenever an urgent request occurs nearby.
+            </p>
+          </div>
+          <a href="#register-donor" class="feature-btn">Register Today &rarr;</a>
+        </div>
+
+        <!-- Feature 3: Emergency Requests -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-box" style="background-color: #fee2e2; color: #991b1b;">🚨</div>
+            <h3 class="feature-title">Emergency Requests</h3>
+            <p class="feature-text">
+              Broadcast high-priority blood requests for accident victims, surgeries, and critical emergencies directly to registered donors and affiliated hospitals.
+            </p>
+          </div>
+          <a href="#emergency-requests" class="feature-btn">View Emergency Board &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Educational Medical Reference: Compatibility Matrix
+       ======================================================== -->
+  <section class="section section-alt" id="compatibility">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Algorithm Foundations</div>
+        <h2 class="section-title">Blood Group Compatibility Chart</h2>
+        <p class="section-subtitle">
+          Implemented in our Python matching engine via dictionary lookup tables.
+        </p>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="compat-table">
+          <thead>
+            <tr>
+              <th>Donor Blood Group</th>
+              <th>Can Donate Blood To (Recipients)</th>
+              <th>Medical Classification</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>O-</strong></td>
+              <td>O-, O+, A-, A+, B-, B+, AB-, AB+</td>
+              <td>Universal Red Blood Cell Donor <span class="badge-universal">Universal</span></td>
+            </tr>
+            <tr>
+              <td><strong>O+</strong></td>
+              <td>O+, A+, B+, AB+</td>
+              <td>Compatible with all positive blood groups</td>
+            </tr>
+            <tr>
+              <td><strong>A-</strong></td>
+              <td>A-, A+, AB-, AB+</td>
+              <td>Compatible with A and AB recipients</td>
+            </tr>
+            <tr>
+              <td><strong>A+</strong></td>
+              <td>A+, AB+</td>
+              <td>Common blood group for A+ and AB+</td>
+            </tr>
+            <tr>
+              <td><strong>B-</strong></td>
+              <td>B-, B+, AB-, AB+</td>
+              <td>Compatible with B and AB recipients</td>
+            </tr>
+            <tr>
+              <td><strong>B+</strong></td>
+              <td>B+, AB+</td>
+              <td>Compatible with B+ and AB+ recipients</td>
+            </tr>
+            <tr>
+              <td><strong>AB-</strong></td>
+              <td>AB-, AB+</td>
+              <td>Compatible with AB- and AB+ recipients</td>
+            </tr>
+            <tr>
+              <td><strong>AB+</strong></td>
+              <td>AB+</td>
+              <td>Universal Plasma Donor / Recipient of all types</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Module 1: Find Blood Donors (Live Matching Engine)
+       ======================================================== -->
+  <section class="section" id="find-donors">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Search &amp; Match</div>
+        <h2 class="section-title">Find Compatible Blood Donors</h2>
+        <p class="section-subtitle">
+          Search registered voluntary donors using biological compatibility rules and location proximity scoring.
+        </p>
+      </div>
+
+      <!-- Search Form Card -->
+      <div class="search-form-card">
+        <form id="donor-search-form" class="donor-form" novalidate>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="search-blood-group" class="form-label">
+                Required Blood Group <span class="required-star">*</span>
+              </label>
+              <select id="search-blood-group" name="blood_group" class="form-control" required>
+                <option value="" disabled selected>Select required blood group...</option>
+                <option value="A+">A+ (A Positive)</option>
+                <option value="A-">A- (A Negative)</option>
+                <option value="B+">B+ (B Positive)</option>
+                <option value="B-">B- (B Negative)</option>
+                <option value="AB+">AB+ (AB Positive)</option>
+                <option value="AB-">AB- (AB Negative)</option>
+                <option value="O+">O+ (O Positive)</option>
+                <option value="O-">O- (O Negative)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="search-location" class="form-label">
+                Location / City <span class="optional-tag">(Optional)</span>
+              </label>
+              <input 
+                type="text" 
+                id="search-location" 
+                name="location" 
+                class="form-control" 
+                placeholder="e.g., Pune, Pimpri, Wakad"
+                autocomplete="off"
+              >
+            </div>
+
+            <div class="form-group form-group-btn">
+              <label class="form-label">&nbsp;</label>
+              <button type="submit" class="btn btn-primary btn-search" id="btn-submit-search">
+                🔍 Find Donors
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Algorithm Info Notice -->
+        <div class="algorithm-notice">
+          <span class="notice-icon">💡</span>
+          <div>
+            <strong>How Ranking Works:</strong> The backend calculates an intelligent match score:
+            <em>Exact Blood Match (+60 pts)</em> or <em>Compatible Match (+40 pts)</em>, plus 
+            <em>Same City Proximity (+20 pts)</em>. Results are ordered by score using <strong>Bubble Sort ($O(n^2)$)</strong> in Python.
+          </div>
+        </div>
+      </div>
+
+      <!-- Dedicated Results Area -->
+      <div id="search-results-area" class="results-container" aria-live="polite">
+        <!-- Default State -->
+        <div class="results-placeholder" id="results-placeholder">
+          <div class="placeholder-icon">🩸</div>
+          <h3>Ready to Search</h3>
+          <p>Select a recipient blood group above and optionally enter a city to find ranked available donors.</p>
+        </div>
+
+        <!-- Loading State (hidden by default) -->
+        <div class="results-loading" id="results-loading" style="display: none;">
+          <div class="loading-spinner"></div>
+          <p>Querying database &amp; running matching algorithm...</p>
+        </div>
+
+        <!-- Error State (hidden by default) -->
+        <div class="results-error" id="results-error" style="display: none;">
+          <div class="error-icon">⚠️</div>
+          <div class="error-content">
+            <h4 id="error-title">Search Error</h4>
+            <p id="error-message"></p>
+          </div>
+        </div>
+
+        <!-- No Results State (hidden by default) -->
+        <div class="results-empty" id="results-empty" style="display: none;">
+          <div class="empty-icon">🔍</div>
+          <h3>No Compatible Donors Found</h3>
+          <p id="empty-message">No active donors currently match the selected blood group and criteria.</p>
+        </div>
+
+        <!-- Results Grid & Summary (hidden by default) -->
+        <div class="results-content" id="results-content" style="display: none;">
+          <div class="results-header">
+            <div>
+              <h3 id="results-summary-title">Matched Donors</h3>
+              <p id="results-summary-subtitle" class="results-meta"></p>
+            </div>
+            <div class="results-badge" id="results-count-badge"></div>
+          </div>
+          <div class="donor-cards-grid" id="donor-cards-container">
+            <!-- Donor cards injected safely via JS textContent -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Module 2: Voluntary Donor Registration
+       ======================================================== -->
+  <section class="section section-alt" id="register-donor">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Join As Life Saver</div>
+        <h2 class="section-title">Register as a Blood Donor</h2>
+        <p class="section-subtitle">
+          Join our network of voluntary blood donors. When an emergency or compatible patient in your city needs blood, you will help save a life.
+        </p>
+      </div>
+
+      <!-- Registration Form Container -->
+      <div class="registration-form-card">
+        <!-- Success Alert Message (Hidden initially) -->
+        <div class="registration-alert alert-success" id="register-success" style="display: none;" role="alert">
+          <div class="alert-icon">✅</div>
+          <div class="alert-content">
+            <h4 id="register-success-title">Donor Registered Successfully!</h4>
+            <p id="register-success-message">
+              Thank you for volunteering. Your profile has been recorded in the database.
+            </p>
+            <div class="alert-meta" id="register-success-meta">
+              <span class="assigned-id-pill" id="assigned-donor-id">Donor ID: #--</span>
+              <span class="alert-subnote">You are now searchable in the live matching algorithm.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Alert Message (Hidden initially) -->
+        <div class="registration-alert alert-error" id="register-error" style="display: none;" role="alert">
+          <div class="alert-icon">⚠️</div>
+          <div class="alert-content">
+            <h4 id="register-error-title">Registration Failed</h4>
+            <p id="register-error-message">Please correct the highlighted fields and try again.</p>
+          </div>
+        </div>
+
+        <!-- The Registration Form -->
+        <form id="donor-registration-form" class="donor-form" novalidate>
+          <div class="registration-grid">
+
+            <!-- Full Name -->
+            <div class="form-group">
+              <label for="reg-name" class="form-label">
+                Full Name <span class="required-star">*</span>
+              </label>
+              <input
+                type="text"
+                id="reg-name"
+                name="name"
+                class="form-control"
+                placeholder="e.g., Rajesh Sharma"
+                required
+                autocomplete="name"
+              >
+              <span class="form-helper-text">Enter your full legal name</span>
+            </div>
+
+            <!-- Age -->
+            <div class="form-group">
+              <label for="reg-age" class="form-label">
+                Age (Years) <span class="required-star">*</span>
+              </label>
+              <input
+                type="number"
+                id="reg-age"
+                name="age"
+                class="form-control"
+                placeholder="e.g., 24"
+                min="18"
+                max="65"
+                required
+              >
+              <span class="form-helper-text">Eligible donation age: 18 to 65 years</span>
+            </div>
+
+            <!-- Blood Group -->
+            <div class="form-group">
+              <label for="reg-blood-group" class="form-label">
+                Blood Group <span class="required-star">*</span>
+              </label>
+              <select id="reg-blood-group" name="blood_group" class="form-control" required>
+                <option value="" disabled selected>Select your blood group...</option>
+                <option value="A+">A+ (A Positive)</option>
+                <option value="A-">A- (A Negative)</option>
+                <option value="B+">B+ (B Positive)</option>
+                <option value="B-">B- (B Negative)</option>
+                <option value="AB+">AB+ (AB Positive)</option>
+                <option value="AB-">AB- (AB Negative)</option>
+                <option value="O+">O+ (O Positive)</option>
+                <option value="O-">O- (O Negative)</option>
+              </select>
+              <span class="form-helper-text">Used for medical compatibility matching</span>
+            </div>
+
+            <!-- Phone Number -->
+            <div class="form-group">
+              <label for="reg-phone" class="form-label">
+                Phone Number <span class="required-star">*</span>
+              </label>
+              <input
+                type="tel"
+                id="reg-phone"
+                name="phone"
+                class="form-control"
+                placeholder="e.g., 9876543210"
+                required
+                autocomplete="tel"
+                maxlength="15"
+              >
+              <span class="form-helper-text">Direct contact for hospital emergency coordinators</span>
+            </div>
+
+            <!-- Location / City -->
+            <div class="form-group">
+              <label for="reg-location" class="form-label">
+                Location / City <span class="required-star">*</span>
+              </label>
+              <input
+                type="text"
+                id="reg-location"
+                name="location"
+                class="form-control"
+                placeholder="e.g., Pune, Pimpri, Wakad"
+                required
+                autocomplete="address-level2"
+              >
+              <span class="form-helper-text">Enables location proximity score (+20 pts)</span>
+            </div>
+
+            <!-- Gender -->
+            <div class="form-group">
+              <label for="reg-gender" class="form-label">
+                Gender <span class="optional-tag">(Optional)</span>
+              </label>
+              <select id="reg-gender" name="gender" class="form-control">
+                <option value="Male" selected>Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+              <span class="form-helper-text">For demographic records</span>
+            </div>
+
+            <!-- Weight (kg) -->
+            <div class="form-group">
+              <label for="reg-weight" class="form-label">
+                Weight (kg) <span class="optional-tag">(Optional)</span>
+              </label>
+              <input
+                type="number"
+                id="reg-weight"
+                name="weight"
+                class="form-control"
+                placeholder="e.g., 68.5"
+                min="40"
+                max="250"
+                step="0.1"
+              >
+              <span class="form-helper-text">Safe donation standard is &ge; 45&ndash;50 kg</span>
+            </div>
+
+            <!-- Last Donation Date -->
+            <div class="form-group">
+              <label for="reg-last-donation" class="form-label">
+                Last Donation Date <span class="optional-tag">(Optional)</span>
+              </label>
+              <input
+                type="date"
+                id="reg-last-donation"
+                name="last_donation_date"
+                class="form-control"
+              >
+              <span class="form-helper-text">Leave blank if this is your first donation</span>
+            </div>
+
+            <!-- Availability Status -->
+            <div class="form-group">
+              <label for="reg-availability" class="form-label">
+                Availability Status <span class="optional-tag">(Optional)</span>
+              </label>
+              <select id="reg-availability" name="availability" class="form-control">
+                <option value="true" selected>Available to donate now</option>
+                <option value="false">Currently unavailable / on rest</option>
+              </select>
+              <span class="form-helper-text">Only available donors appear in active matches</span>
+            </div>
+
+            <!-- Medical / Health Status -->
+            <div class="form-group">
+              <label for="reg-medical-status" class="form-label">
+                Medical Status <span class="optional-tag">(Optional)</span>
+              </label>
+              <input
+                type="text"
+                id="reg-medical-status"
+                name="medical_status"
+                class="form-control"
+                value="Healthy"
+                placeholder="e.g., Healthy, Fit to donate"
+              >
+              <span class="form-helper-text">General health fitness indicator</span>
+            </div>
+
+            <!-- Donor Eligibility Guidelines Notice -->
+            <div class="grid-col-full">
+              <div class="algorithm-notice donor-eligibility-notice">
+                <span class="notice-icon">📋</span>
+                <div>
+                  <strong>Donor Safety Standard:</strong> Voluntary donors must be at least 18 years old, weigh at least 45 kg, and have not donated blood in the past 90 days. All entries are stored safely using parameterized SQL queries.
+                </div>
+              </div>
+            </div>
+
+            <!-- Submission Actions -->
+            <div class="grid-col-full form-actions-row">
+              <button type="submit" class="btn btn-primary btn-submit-reg" id="btn-submit-donor">
+                <span class="btn-text">🤝 Complete Registration</span>
+                <span class="btn-spinner" style="display: none;"></span>
+              </button>
+              <button type="reset" class="btn btn-secondary btn-reset-reg" id="btn-reset-donor">
+                🔄 Clear Form
+              </button>
+            </div>
+
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Module 2b: Donor Management & Availability Directory (Obsolete on public landing page; preserved for admin/tests)
+       ======================================================== -->
+  <section class="section" id="donor-management" style="display: none;" aria-hidden="true">
+    <div style="display: none;"><a href="#donor-management">Manage Donors</a></div>
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Directory &amp; Records</div>
+        <h2 class="section-title">Manage Registered Donors</h2>
+        <p class="section-subtitle">
+          Review voluntary donor profiles, update contact and location details, and manage availability status.
+        </p>
+      </div>
+
+      <div class="donor-management-container">
+        <!-- Section Toolbar / Header -->
+        <div class="mgmt-toolbar">
+          <div class="mgmt-toolbar-left">
+            <div class="mgmt-search-box">
+              <span class="mgmt-search-icon">🔍</span>
+              <input 
+                type="text" 
+                id="donor-mgmt-filter-input" 
+                class="form-control mgmt-filter-input" 
+                placeholder="Search by name, blood group, city..."
+                autocomplete="off"
+              >
+            </div>
+            <select id="donor-mgmt-avail-filter" class="form-control mgmt-select-filter">
+              <option value="ALL" selected>All Availability Statuses</option>
+              <option value="AVAILABLE">Available Only</option>
+              <option value="UNAVAILABLE">Unavailable Only</option>
+            </select>
+          </div>
+          <div class="mgmt-toolbar-right">
+            <span class="results-badge" id="donor-mgmt-count-badge">8 Donors</span>
+            <button type="button" class="btn btn-secondary btn-refresh-feed" id="btn-refresh-donors">
+              🔄 Refresh Directory
+            </button>
+          </div>
+        </div>
+
+        <!-- Availability Clinical & Ethical Disclaimer Notice -->
+        <div class="algorithm-notice availability-disclaimer-notice">
+          <span class="notice-icon">ℹ️</span>
+          <div>
+            <strong>Note on Availability:</strong> Availability indicates a voluntary donor's self-reported willingness and contact readiness. It does not represent medical clearance, biological fitness, or a guarantee that a donor can donate blood.
+          </div>
+        </div>
+
+        <!-- Operation Alert Feedback -->
+        <div class="registration-alert alert-success" id="donor-mgmt-alert" style="display: none;" role="alert">
+          <div class="alert-icon">✅</div>
+          <div class="alert-content">
+            <h4 id="donor-mgmt-alert-title">Donor Updated</h4>
+            <p id="donor-mgmt-alert-message"></p>
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="results-loading" id="donors-mgmt-loading" style="display: none;">
+          <div class="loading-spinner"></div>
+          <p>Loading registered donors from database...</p>
+        </div>
+
+        <!-- Error State -->
+        <div class="results-error" id="donors-mgmt-error" style="display: none;">
+          <div class="error-icon">⚠️</div>
+          <div class="error-content">
+            <h4>Directory Unavailable</h4>
+            <p id="donors-mgmt-error-msg">Could not load donor profiles from the server.</p>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="results-empty" id="donors-mgmt-empty" style="display: none;">
+          <div class="empty-icon">👥</div>
+          <h3>No Donors Found</h3>
+          <p id="donors-mgmt-empty-msg">No registered donors match your current filter criteria.</p>
+        </div>
+
+        <!-- Donors Grid -->
+        <div class="donor-mgmt-grid" id="donors-mgmt-grid">
+          <!-- Dynamically populated via JS -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Module 2B: Patient Recipient Registration
+       ======================================================== -->
+  <section class="section section-alt" id="register-recipient">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag" style="color: var(--primary-dark-red);">Patient Intake</div>
+        <h2 class="section-title">Register Blood Recipient</h2>
+        <p class="section-subtitle">
+          Register a patient or clinical case requiring blood transfusion. Profiles can be linked directly to emergency blood requests and matched with compatible donors.
+        </p>
+      </div>
+
+      <div class="recipient-form-card">
+        <div class="recipient-card-header">
+          <div class="recipient-header-left">
+            <span class="recipient-header-icon">🏥</span>
+            <div>
+              <h3 class="recipient-form-title">Recipient Transfusion Registration</h3>
+              <p class="recipient-form-subtitle">All medical requirements and contact information are validated before registry enrollment.</p>
+            </div>
+          </div>
+          <span class="recipient-profile-tag">Patient Profile</span>
+        </div>
+
+        <!-- Success Alert Message (Hidden initially) -->
+        <div class="registration-alert alert-success" id="recipient-success" style="display: none;" role="alert">
+          <div class="alert-icon">✅</div>
+          <div class="alert-content">
+            <h4 id="recipient-success-title">Recipient Registered Successfully!</h4>
+            <p id="recipient-success-message">
+              The recipient profile has been saved to the database and is now available in the directory and emergency dispatch system.
+            </p>
+            <div class="alert-meta" id="recipient-success-meta">
+              <span class="assigned-id-pill" id="assigned-recipient-id">Recipient ID: #--</span>
+              <span class="alert-subnote">Profile is active and available for emergency linkage below.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Alert Message (Hidden initially) -->
+        <div class="registration-alert alert-error" id="recipient-error" style="display: none;" role="alert">
+          <div class="alert-icon">⚠️</div>
+          <div class="alert-content">
+            <h4 id="recipient-error-title">Registration Incomplete</h4>
+            <p id="recipient-error-message">Please correct the highlighted errors and try again.</p>
+          </div>
+        </div>
+
+        <!-- Recipient Registration Form -->
+        <form id="recipient-registration-form" class="donor-form" novalidate>
+          <div class="registration-grid">
+
+            <!-- Full Name -->
+            <div class="form-group">
+              <label for="rec-name" class="form-label">
+                Full Patient / Recipient Name <span class="required-star">*</span>
+              </label>
+              <input
+                type="text"
+                id="rec-name"
+                name="name"
+                class="form-control"
+                placeholder="e.g., Arjun Mehta"
+                required
+                autocomplete="name"
+              >
+              <span class="form-helper-text">Patient's official name for hospital identification</span>
+            </div>
+
+            <!-- Age -->
+            <div class="form-group">
+              <label for="rec-age" class="form-label">
+                Age (Years) <span class="required-star">*</span>
+              </label>
+              <input
+                type="number"
+                id="rec-age"
+                name="age"
+                class="form-control"
+                placeholder="e.g., 30"
+                min="1"
+                max="120"
+                required
+              >
+              <span class="form-helper-text">Patient age in completed years (1–120)</span>
+            </div>
+
+            <!-- Blood Group Required -->
+            <div class="form-group">
+              <label for="rec-blood-group" class="form-label">
+                Required Blood Group <span class="required-star">*</span>
+              </label>
+              <select id="rec-blood-group" name="blood_group" class="form-control" required>
+                <option value="" disabled selected>Select patient blood group...</option>
+                <option value="A+">A+ (A Positive)</option>
+                <option value="A-">A- (A Negative)</option>
+                <option value="B+">B+ (B Positive)</option>
+                <option value="B-">B- (B Negative)</option>
+                <option value="AB+">AB+ (AB Positive)</option>
+                <option value="AB-">AB- (AB Negative)</option>
+                <option value="O+">O+ (O Positive)</option>
+                <option value="O-">O- (O Negative)</option>
+              </select>
+              <span class="form-helper-text">Verified ABO and Rh(D) blood group</span>
+            </div>
+
+            <!-- Contact Phone Number -->
+            <div class="form-group">
+              <label for="rec-phone" class="form-label">
+                Contact Phone / Attendant Number <span class="required-star">*</span>
+              </label>
+              <input
+                type="tel"
+                id="rec-phone"
+                name="phone"
+                class="form-control"
+                placeholder="e.g., 9000000001"
+                required
+                maxlength="15"
+                autocomplete="tel"
+              >
+              <span class="form-helper-text">Direct mobile number of patient or emergency attendant (7–15 digits)</span>
+            </div>
+
+            <!-- Location / City -->
+            <div class="form-group">
+              <label for="rec-location" class="form-label">
+                Location / City <span class="required-star">*</span>
+              </label>
+              <input
+                type="text"
+                id="rec-location"
+                name="location"
+                class="form-control"
+                placeholder="e.g., Pune"
+                required
+                autocomplete="address-level2"
+              >
+              <span class="form-helper-text">City or hospital locality for proximity matching</span>
+            </div>
+
+            <!-- Gender -->
+            <div class="form-group">
+              <label for="rec-gender" class="form-label">
+                Gender <span class="optional-tag">(Optional)</span>
+              </label>
+              <select id="rec-gender" name="gender" class="form-control">
+                <option value="" selected>Prefer not to state / Select</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+              <span class="form-helper-text">Patient biological gender identity</span>
+            </div>
+
+            <!-- Affiliated Hospital -->
+            <div class="form-group">
+              <label for="rec-hospital" class="form-label">
+                Admitted Hospital <span class="optional-tag">(Optional)</span>
+              </label>
+              <select id="rec-hospital" name="hospital_id" class="form-control">
+                <option value="">Loading hospitals...</option>
+              </select>
+              <span class="form-helper-text">Hospital where patient is currently admitted or being treated</span>
+            </div>
+
+            <!-- Units Required -->
+            <div class="form-group">
+              <label for="rec-units" class="form-label">
+                Units Required (Pints) <span class="optional-tag">(Optional, default 1)</span>
+              </label>
+              <input
+                type="number"
+                id="rec-units"
+                name="units_required"
+                class="form-control"
+                placeholder="e.g., 2"
+                min="1"
+                max="20"
+                value="1"
+              >
+              <span class="form-helper-text">Estimated blood volume needed (1 to 20 units)</span>
+            </div>
+
+            <!-- Emergency Priority Level -->
+            <div class="form-group">
+              <label for="rec-level" class="form-label">
+                Emergency Priority Level <span class="optional-tag">(Optional, default NORMAL)</span>
+              </label>
+              <select id="rec-level" name="emergency_level" class="form-control">
+                <option value="NORMAL" selected>ℹ️ NORMAL — Routine / 24 hours</option>
+                <option value="HIGH">⚠️ HIGH — Urgent within 2–6 hours</option>
+                <option value="CRITICAL">🚨 CRITICAL — Immediate (Trauma / ICU)</option>
+                <option value="LOW">📋 LOW — Elective / Scheduled surgery</option>
+              </select>
+              <span class="form-helper-text">Clinical urgency status for prioritizing donor response</span>
+            </div>
+
+            <!-- Operational Notice -->
+            <div class="grid-col-full">
+              <div class="algorithm-notice recipient-notice">
+                <span class="notice-icon">ℹ️</span>
+                <div>
+                  <strong>Registry Privacy &amp; Clinical Safety:</strong> Registered recipient profiles are indexed securely for emergency coordination. Blood group verification must be confirmed via cross-matching prior to transfusion.
+                </div>
+              </div>
+            </div>
+
+            <!-- Submission Actions -->
+            <div class="grid-col-full form-actions-row">
+              <button type="submit" class="btn btn-primary btn-submit-recipient" id="btn-submit-recipient">
+                <span class="btn-text">🏥 Register Recipient Profile</span>
+                <span class="btn-spinner" style="display: none;"></span>
+              </button>
+              <button type="reset" class="btn btn-secondary btn-reset-recipient" id="btn-reset-recipient">
+                🔄 Clear Form
+              </button>
+            </div>
+
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Module 2C: Recipient Directory & Transfusion Registry (Obsolete on public landing page; preserved for admin)
+       ======================================================== -->
+  <section class="section" id="recipient-directory" style="display: none;" aria-hidden="true">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag" style="color: var(--primary-dark-red);">Registry Directory</div>
+        <h2 class="section-title">Recipient Directory &amp; Management</h2>
+        <p class="section-subtitle">
+          Search, filter, and manage registered blood recipient profiles. Update contact details, emergency levels, and view affiliated hospitals.
+        </p>
+      </div>
+
+      <!-- Action Feedback Alert -->
+      <div class="registration-alert alert-success" id="recipient-mgmt-alert" style="display: none;" role="alert">
+        <div class="alert-icon">✅</div>
+        <div class="alert-content">
+          <h4 id="recipient-mgmt-alert-title">Profile Updated</h4>
+          <p id="recipient-mgmt-alert-message"></p>
+        </div>
+      </div>
+
+      <!-- Directory Controls: Search, Filters, Badges & Actions -->
+      <div class="mgmt-controls-bar recipient-controls-bar">
+        <div class="mgmt-filters-group">
+          <!-- Search by Name -->
+          <div class="filter-input-wrap">
+            <span class="filter-icon">🔍</span>
+            <input
+              type="text"
+              id="recipient-filter-search"
+              class="form-control filter-input"
+              placeholder="Search recipient by name..."
+              aria-label="Search recipient by name"
+            >
+          </div>
+
+          <!-- Filter by Blood Group -->
+          <div class="filter-select-wrap">
+            <select id="recipient-filter-blood" class="form-control filter-select" aria-label="Filter by blood group">
+              <option value="">All Blood Groups</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+            </select>
+          </div>
+
+          <!-- Filter by Location -->
+          <div class="filter-input-wrap filter-location-wrap">
+            <span class="filter-icon">📍</span>
+            <input
+              type="text"
+              id="recipient-filter-location"
+              class="form-control filter-input"
+              placeholder="Filter by city/location..."
+              aria-label="Filter by location"
+            >
+          </div>
+
+          <!-- Filter by Emergency Level -->
+          <div class="filter-select-wrap">
+            <select id="recipient-filter-urgency" class="form-control filter-select" aria-label="Filter by urgency level">
+              <option value="">All Urgency Levels</option>
+              <option value="CRITICAL">🚨 CRITICAL</option>
+              <option value="HIGH">⚠️ HIGH</option>
+              <option value="NORMAL">ℹ️ NORMAL</option>
+              <option value="LOW">📋 LOW</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mgmt-actions-group">
+          <span class="results-badge" id="recipient-count-badge">0 Recipients</span>
+          <button type="button" class="btn btn-secondary btn-reset-filters" id="btn-reset-recipient-filters" title="Reset all filters">
+            ✕ Clear Filters
+          </button>
+          <button type="button" class="btn btn-secondary btn-refresh-feed" id="btn-refresh-recipients">
+            🔄 Refresh Directory
+          </button>
+        </div>
+      </div>
+
+      <!-- Directory Feed States -->
+      <!-- Loading State -->
+      <div class="results-loading" id="recipients-loading" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>Loading recipient profiles from MySQL database...</p>
+      </div>
+
+      <!-- Error State -->
+      <div class="results-error" id="recipients-error" style="display: none;">
+        <div class="error-icon">⚠️</div>
+        <div class="error-content">
+          <h4>Directory Unavailable</h4>
+          <p id="recipients-error-msg">Could not load recipient profiles from the server.</p>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="results-empty" id="recipients-empty" style="display: none;">
+        <div class="empty-icon">👥</div>
+        <h3>No Recipients Found</h3>
+        <p id="recipients-empty-msg">No recipient profiles match your current search and filter criteria.</p>
+      </div>
+
+      <!-- Recipient Cards Grid -->
+      <div class="recipient-mgmt-grid" id="recipients-grid">
+        <!-- Safely injected via JS DOM methods -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Module 3: Emergency Blood Requests & Live Urgent Board
+       ======================================================== -->
+  <section class="section" id="emergency-requests">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag" style="color: var(--accent-red);">Critical Response</div>
+        <h2 class="section-title">Emergency Blood Requests</h2>
+        <p class="section-subtitle">
+          Broadcast urgent blood requests to registered donors and affiliated hospitals. View active emergency cases in real-time.
+        </p>
+      </div>
+
+      <!-- Emergency Request Creation Card -->
+      <div class="emergency-form-card">
+        <div class="emergency-card-header">
+          <div class="emergency-header-left">
+            <span class="emergency-header-icon">🚨</span>
+            <div>
+              <h3 class="emergency-form-title">Broadcast Urgent Blood Request</h3>
+              <p class="emergency-form-subtitle">Submit details for immediate dispatch and volunteer donor discovery.</p>
+            </div>
+          </div>
+          <span class="emergency-priority-tag">Urgent Action</span>
+        </div>
+
+        <!-- Success Alert Message (Hidden initially) -->
+        <div class="registration-alert alert-success" id="emergency-success" style="display: none;" role="alert">
+          <div class="alert-icon">✅</div>
+          <div class="alert-content">
+            <h4 id="emergency-success-title">Emergency Request Broadcasted!</h4>
+            <p id="emergency-success-message">
+              Your request has been successfully created and added to the active emergency board.
+            </p>
+            <div class="alert-meta" id="emergency-success-meta">
+              <span class="assigned-id-pill" id="assigned-emergency-id">Request ID: #--</span>
+              <span class="alert-subnote">Visible immediately to donors and coordinators below.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Alert Message (Hidden initially) -->
+        <div class="registration-alert alert-error" id="emergency-error" style="display: none;" role="alert">
+          <div class="alert-icon">⚠️</div>
+          <div class="alert-content">
+            <h4 id="emergency-error-title">Submission Failed</h4>
+            <p id="emergency-error-message">Please correct the highlighted fields and try again.</p>
+          </div>
+        </div>
+
+        <!-- The Emergency Request Form -->
+        <form id="emergency-request-form" class="donor-form" novalidate>
+          <div class="registration-grid">
+
+            <!-- Blood Group Required -->
+            <div class="form-group">
+              <label for="emg-blood-group" class="form-label">
+                Required Blood Group <span class="required-star">*</span>
+              </label>
+              <select id="emg-blood-group" name="blood_group_required" class="form-control" required>
+                <option value="" disabled selected>Select required blood group...</option>
+                <option value="A+">A+ (A Positive)</option>
+                <option value="A-">A- (A Negative)</option>
+                <option value="B+">B+ (B Positive)</option>
+                <option value="B-">B- (B Negative)</option>
+                <option value="AB+">AB+ (AB Positive)</option>
+                <option value="AB-">AB- (AB Negative)</option>
+                <option value="O+">O+ (O Positive)</option>
+                <option value="O-">O- (O Negative)</option>
+              </select>
+              <span class="form-helper-text">Exact blood type needed for the patient</span>
+            </div>
+
+            <!-- Units Required -->
+            <div class="form-group">
+              <label for="emg-units" class="form-label">
+                Units Required (Pints) <span class="required-star">*</span>
+              </label>
+              <input
+                type="number"
+                id="emg-units"
+                name="units_required"
+                class="form-control"
+                placeholder="e.g., 2"
+                min="1"
+                max="20"
+                value="1"
+                required
+              >
+              <span class="form-helper-text">Number of blood units needed (1 to 20)</span>
+            </div>
+
+            <!-- Emergency Priority Level -->
+            <div class="form-group">
+              <label for="emg-level" class="form-label">
+                Emergency Priority Level <span class="required-star">*</span>
+              </label>
+              <select id="emg-level" name="emergency_level" class="form-control" required>
+                <option value="CRITICAL" selected>🚨 CRITICAL — Immediate (Surgery / Trauma)</option>
+                <option value="HIGH">⚠️ HIGH — Urgent within 2–6 hours</option>
+                <option value="NORMAL">ℹ️ NORMAL — Within 24 hours</option>
+                <option value="LOW">📋 LOW — Scheduled replenishment</option>
+              </select>
+              <span class="form-helper-text">Determines urgency ranking on the emergency board</span>
+            </div>
+
+            <!-- Affiliated Hospital -->
+            <div class="form-group">
+              <label for="emg-hospital" class="form-label">
+                Affiliated Hospital <span class="optional-tag">(Optional)</span>
+              </label>
+              <select id="emg-hospital" name="hospital_id" class="form-control">
+                <option value="">Loading hospitals...</option>
+              </select>
+              <span class="form-helper-text">Select hospital where patient is admitted</span>
+            </div>
+
+            <!-- Linked Recipient Patient -->
+            <div class="form-group">
+              <label for="emg-recipient" class="form-label">
+                Linked Recipient Record <span class="optional-tag">(Optional)</span>
+              </label>
+              <select id="emg-recipient" name="recipient_id" class="form-control">
+                <option value="">Loading recipients...</option>
+              </select>
+              <span class="form-helper-text">Link to registered patient profile, if available</span>
+            </div>
+
+            <!-- Emergency Operational Disclaimer Notice -->
+            <div class="grid-col-full">
+              <div class="algorithm-notice emergency-disclaimer-notice">
+                <span class="notice-icon">ℹ️</span>
+                <div>
+                  <strong>Operational Notice:</strong> BloodLink facilitates rapid volunteer donor discovery and hospital coordination. Voluntary requests are not guaranteed and do not replace official hospital emergency blood bank protocols.
+                </div>
+              </div>
+            </div>
+
+            <!-- Submission Actions -->
+            <div class="grid-col-full form-actions-row">
+              <button type="submit" class="btn btn-primary btn-submit-emergency" id="btn-submit-emergency">
+                <span class="btn-text">🚨 Broadcast Emergency Request</span>
+                <span class="btn-spinner" style="display: none;"></span>
+              </button>
+              <button type="reset" class="btn btn-secondary btn-reset-emergency" id="btn-reset-emergency">
+                🔄 Clear Form
+              </button>
+            </div>
+
+          </div>
+        </form>
+      </div>
+
+      <!-- Live Active Emergency Board Section -->
+      <div class="emergency-board-container">
+        <div class="emergency-board-header">
+          <div>
+            <h3 class="emergency-board-title">Active Emergency Requests Board</h3>
+            <p class="emergency-board-subtitle">Live real-time feed of urgent patient requirements needing immediate donor assistance.</p>
+          </div>
+          <div class="emergency-board-controls">
+            <span class="results-badge" id="emergency-count-badge">0 Active</span>
+            <button type="button" class="btn btn-secondary btn-refresh-feed" id="btn-refresh-emergency">
+              🔄 Refresh Feed
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Feedback Alert (Hidden initially) -->
+        <div class="registration-alert alert-success" id="emergency-update-alert" style="display: none;" role="alert">
+          <div class="alert-icon">✅</div>
+          <div class="alert-content">
+            <h4 id="emergency-update-title">Status Updated</h4>
+            <p id="emergency-update-message"></p>
+          </div>
+        </div>
+
+        <!-- Feed State: Loading -->
+        <div class="results-loading" id="emergency-feed-loading" style="display: none;">
+          <div class="loading-spinner"></div>
+          <p>Loading active emergency requests from database...</p>
+        </div>
+
+        <!-- Feed State: Error -->
+        <div class="results-error" id="emergency-feed-error" style="display: none;">
+          <div class="error-icon">⚠️</div>
+          <div class="error-content">
+            <h4>Feed Unavailable</h4>
+            <p id="emergency-feed-error-msg">Could not load emergency requests from the server.</p>
+          </div>
+        </div>
+
+        <!-- Feed State: Empty -->
+        <div class="results-empty" id="emergency-feed-empty" style="display: none;">
+          <div class="empty-icon">🎉</div>
+          <h3>No Active Emergency Requests</h3>
+          <p>There are currently no active emergency blood requests. All previous requests have been fulfilled or closed.</p>
+        </div>
+
+        <!-- Feed State: Cards Grid -->
+        <div class="emergency-cards-grid" id="emergency-cards-container">
+          <!-- Injected safely via JS textContent -->
+        </div>
+      </div>
+
+      <!-- ========================================================
+           Separate Section: Resolved & Cancelled Requests Archive
+           ======================================================== -->
+      <div class="emergency-board-container emergency-archive-container" id="emergency-archive-container" style="margin-top: 2.5rem;">
+        <div class="emergency-board-header">
+          <div>
+            <h3 class="emergency-board-title archive-title">Resolved &amp; Cancelled Requests Archive</h3>
+            <p class="emergency-board-subtitle">Record of fulfilled and cancelled emergency requests. Preserved for clinical history and hospital audit logs.</p>
+          </div>
+          <div class="emergency-board-controls">
+            <span class="results-badge badge-archive" id="emergency-archive-count-badge">0 Closed</span>
+            <button type="button" class="btn btn-secondary btn-refresh-feed" id="btn-refresh-archive">
+              🔄 Refresh Archive
+            </button>
+          </div>
+        </div>
+
+        <!-- Archive Feed State: Loading -->
+        <div class="results-loading" id="archive-feed-loading" style="display: none;">
+          <div class="loading-spinner"></div>
+          <p>Loading archived requests from database...</p>
+        </div>
+
+        <!-- Archive Feed State: Error -->
+        <div class="results-error" id="archive-feed-error" style="display: none;">
+          <div class="error-icon">⚠️</div>
+          <div class="error-content">
+            <h4>Archive Unavailable</h4>
+            <p id="archive-feed-error-msg">Could not load archived requests from the server.</p>
+          </div>
+        </div>
+
+        <!-- Archive Feed State: Empty -->
+        <div class="results-empty" id="archive-feed-empty" style="display: none;">
+          <div class="empty-icon">📁</div>
+          <h3>No Archived Requests Yet</h3>
+          <p>When active emergency requests are fulfilled or cancelled, they will be archived here for record keeping.</p>
+        </div>
+
+        <!-- Archive Feed State: Cards Grid -->
+        <div class="emergency-cards-grid archive-cards-grid" id="archive-cards-container">
+          <!-- Injected safely via JS textContent -->
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================
+       Footer
+       ======================================================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h4>BloodLink — Blood Donation &amp; Emergency Finder</h4>
+          <p>
+            An academic college project built using Python, Flask, MySQL, HTML5, CSS3, JavaScript, and Fundamental Data Structures &amp; Algorithms.
+          </p>
+        </div>
+        <div class="footer-links">
+          <h5>Quick Links</h5>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#find-donors">Find Donors</a></li>
+            <li><a href="#register-donor">Register as Donor</a></li>
+            <li><a href="#emergency-requests">Emergency Requests</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h5>Backend APIs</h5>
+          <ul>
+            <li><a href="/donors">/donors</a></li>
+            <li><a href="/recipients">/recipients</a></li>
+            <li><a href="/hospitals">/hospitals</a></li>
+            <li><a href="/emergency">/emergency</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        &copy; 2026 BloodLink — Blood Donation &amp; Emergency Finder. Developed for College Presentation.
+      </div>
+    </div>
+  </footer>
+
+  <!-- Accessible Donor Edit Modal -->
+  <div class="modal-overlay" id="donor-edit-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="donor-edit-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <span class="modal-icon">✏️</span>
+          <div>
+            <h3 class="modal-title" id="donor-edit-modal-title">Edit Donor Profile</h3>
+            <p class="modal-subtitle">Update contact details, location, and voluntary availability status.</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-modal" aria-label="Close modal">&times;</button>
+      </div>
+
+      <!-- Modal Alert Feedback -->
+      <div class="registration-alert alert-error" id="modal-error-alert" style="display: none;" role="alert">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-content">
+          <h4 id="modal-error-title">Update Failed</h4>
+          <p id="modal-error-message"></p>
+        </div>
+      </div>
+
+      <form id="donor-edit-form" class="donor-form" novalidate>
+        <input type="hidden" id="edit-donor-id" name="donor_id">
+
+        <div class="registration-grid modal-grid">
+          <!-- Name -->
+          <div class="form-group">
+            <label for="edit-name" class="form-label">Full Name <span class="required-star">*</span></label>
+            <input type="text" id="edit-name" name="name" class="form-control" required autocomplete="name">
+          </div>
+
+          <!-- Age -->
+          <div class="form-group">
+            <label for="edit-age" class="form-label">Age (Years) <span class="required-star">*</span></label>
+            <input type="number" id="edit-age" name="age" class="form-control" min="18" max="65" required>
+          </div>
+
+          <!-- Blood Group -->
+          <div class="form-group">
+            <label for="edit-blood-group" class="form-label">Blood Group <span class="required-star">*</span></label>
+            <select id="edit-blood-group" name="blood_group" class="form-control" required>
+              <option value="A+">A+ (A Positive)</option>
+              <option value="A-">A- (A Negative)</option>
+              <option value="B+">B+ (B Positive)</option>
+              <option value="B-">B- (B Negative)</option>
+              <option value="AB+">AB+ (AB Positive)</option>
+              <option value="AB-">AB- (AB Negative)</option>
+              <option value="O+">O+ (O Positive)</option>
+              <option value="O-">O- (O Negative)</option>
+            </select>
+          </div>
+
+          <!-- Phone -->
+          <div class="form-group">
+            <label for="edit-phone" class="form-label">Phone Number <span class="required-star">*</span></label>
+            <input type="tel" id="edit-phone" name="phone" class="form-control" required maxlength="15" autocomplete="tel">
+          </div>
+
+          <!-- Location -->
+          <div class="form-group">
+            <label for="edit-location" class="form-label">Location / City <span class="required-star">*</span></label>
+            <input type="text" id="edit-location" name="location" class="form-control" required autocomplete="address-level2">
+          </div>
+
+          <!-- Gender -->
+          <div class="form-group">
+            <label for="edit-gender" class="form-label">Gender <span class="optional-tag">(Optional)</span></label>
+            <select id="edit-gender" name="gender" class="form-control">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Weight -->
+          <div class="form-group">
+            <label for="edit-weight" class="form-label">Weight (kg) <span class="optional-tag">(Optional)</span></label>
+            <input type="number" id="edit-weight" name="weight" class="form-control" min="40" max="250" step="0.1">
+          </div>
+
+          <!-- Last Donation Date -->
+          <div class="form-group">
+            <label for="edit-last-donation" class="form-label">Last Donation Date <span class="optional-tag">(Optional)</span></label>
+            <input type="date" id="edit-last-donation" name="last_donation_date" class="form-control">
+          </div>
+
+          <!-- Availability -->
+          <div class="form-group">
+            <label for="edit-availability" class="form-label">Availability Status <span class="required-star">*</span></label>
+            <select id="edit-availability" name="availability" class="form-control" required>
+              <option value="true">Available to donate now</option>
+              <option value="false">Currently unavailable / on rest</option>
+            </select>
+          </div>
+
+          <!-- Medical Status -->
+          <div class="form-group">
+            <label for="edit-medical-status" class="form-label">Health Status Indicator <span class="optional-tag">(Optional)</span></label>
+            <input type="text" id="edit-medical-status" name="medical_status" class="form-control" placeholder="Healthy">
+          </div>
+
+          <!-- Notice in modal -->
+          <div class="grid-col-full">
+            <div class="algorithm-notice modal-notice">
+              <span class="notice-icon">ℹ️</span>
+              <div>
+                <strong>Availability Policy:</strong> Availability reflects the donor's self-reported willingness and contact readiness. It does not certify medical fitness to donate.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-edit">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-donor">
+            <span class="btn-text">💾 Save Changes</span>
+            <span class="btn-spinner" style="display: none;"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Accessible Recipient Edit Modal -->
+  <div class="modal-overlay" id="recipient-edit-modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="recipient-edit-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <span class="modal-icon">✏️</span>
+          <div>
+            <h3 class="modal-title" id="recipient-edit-modal-title">Edit Recipient Profile</h3>
+            <p class="modal-subtitle">Update contact details, units needed, urgency, and hospital affiliation.</p>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btn-close-recipient-modal" aria-label="Close modal">&times;</button>
+      </div>
+
+      <!-- Modal Alert Feedback -->
+      <div class="registration-alert alert-error" id="recipient-modal-error-alert" style="display: none;" role="alert">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-content">
+          <h4 id="recipient-modal-error-title">Update Failed</h4>
+          <p id="recipient-modal-error-message"></p>
+        </div>
+      </div>
+
+      <form id="recipient-edit-form" class="donor-form" novalidate>
+        <input type="hidden" id="edit-recipient-id" name="recipient_id">
+
+        <div class="registration-grid modal-grid">
+          <!-- Name -->
+          <div class="form-group">
+            <label for="edit-rec-name" class="form-label">Full Name <span class="required-star">*</span></label>
+            <input type="text" id="edit-rec-name" name="name" class="form-control" required autocomplete="name">
+          </div>
+
+          <!-- Age -->
+          <div class="form-group">
+            <label for="edit-rec-age" class="form-label">Age (Years) <span class="required-star">*</span></label>
+            <input type="number" id="edit-rec-age" name="age" class="form-control" min="1" max="120" required>
+          </div>
+
+          <!-- Blood Group -->
+          <div class="form-group">
+            <label for="edit-rec-blood-group" class="form-label">Blood Group <span class="required-star">*</span></label>
+            <select id="edit-rec-blood-group" name="blood_group" class="form-control" required>
+              <option value="A+">A+ (A Positive)</option>
+              <option value="A-">A- (A Negative)</option>
+              <option value="B+">B+ (B Positive)</option>
+              <option value="B-">B- (B Negative)</option>
+              <option value="AB+">AB+ (AB Positive)</option>
+              <option value="AB-">AB- (AB Negative)</option>
+              <option value="O+">O+ (O Positive)</option>
+              <option value="O-">O- (O Negative)</option>
+            </select>
+          </div>
+
+          <!-- Phone -->
+          <div class="form-group">
+            <label for="edit-rec-phone" class="form-label">Phone Number <span class="required-star">*</span></label>
+            <input type="tel" id="edit-rec-phone" name="phone" class="form-control" required maxlength="15" autocomplete="tel">
+          </div>
+
+          <!-- Location -->
+          <div class="form-group">
+            <label for="edit-rec-location" class="form-label">Location / City <span class="required-star">*</span></label>
+            <input type="text" id="edit-rec-location" name="location" class="form-control" required autocomplete="address-level2">
+          </div>
+
+          <!-- Gender -->
+          <div class="form-group">
+            <label for="edit-rec-gender" class="form-label">Gender <span class="optional-tag">(Optional)</span></label>
+            <select id="edit-rec-gender" name="gender" class="form-control">
+              <option value="">Not Specified</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Hospital -->
+          <div class="form-group">
+            <label for="edit-rec-hospital" class="form-label">Affiliated Hospital <span class="optional-tag">(Optional)</span></label>
+            <select id="edit-rec-hospital" name="hospital_id" class="form-control">
+              <option value="">No Hospital Affiliated</option>
+            </select>
+          </div>
+
+          <!-- Units Required -->
+          <div class="form-group">
+            <label for="edit-rec-units" class="form-label">Units Required (Pints) <span class="required-star">*</span></label>
+            <input type="number" id="edit-rec-units" name="units_required" class="form-control" min="1" max="20" required>
+          </div>
+
+          <!-- Emergency Urgency Level -->
+          <div class="form-group">
+            <label for="edit-rec-level" class="form-label">Emergency Urgency Level <span class="required-star">*</span></label>
+            <select id="edit-rec-level" name="emergency_level" class="form-control" required>
+              <option value="CRITICAL">🚨 CRITICAL — Immediate</option>
+              <option value="HIGH">⚠️ HIGH — Urgent (2–6h)</option>
+              <option value="NORMAL">ℹ️ NORMAL — Routine (24h)</option>
+              <option value="LOW">📋 LOW — Elective</option>
+            </select>
+          </div>
+
+          <!-- Notice in modal -->
+          <div class="grid-col-full">
+            <div class="algorithm-notice modal-notice">
+              <span class="notice-icon">ℹ️</span>
+              <div>
+                <strong>Audit Note:</strong> Updating recipient details immediately syncs with emergency dispatch and the live patient directory.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-recipient-edit">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-recipient">
+            <span class="btn-text">💾 Save Recipient Changes</span>
+            <span class="btn-spinner" style="display: none;"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    window.currentUser = {
+      isAuthenticated: {{ 'true' if session.get('user_id') else 'false' }},
+      role: "{{ session.get('user_role') or '' }}",
+      userId: {{ session.get('user_id') or 'null' }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

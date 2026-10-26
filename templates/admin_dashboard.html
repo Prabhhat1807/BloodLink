@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Console — BloodLink</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="brand-logo" id="brand-logo-link">
+        <span class="brand-icon">🩸</span>
+        <div class="brand-title">
+          <span class="brand-name">BloodLink</span>
+          <span class="brand-subtitle">Admin Console</span>
+        </div>
+      </a>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="/" id="nav-link-home">Home</a></li>
+          <li>
+            <span class="dashboard-role-tag role-tag-admin" style="margin-bottom:0;">
+              🛡️ {{ user_role }}
+            </span>
+          </li>
+          <li><a href="/logout" class="nav-auth-link" id="nav-link-logout">🚪 Logout</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="dashboard-container">
+
+    <!-- Global Alert Box -->
+    <div id="dashboard-alert" class="dashboard-alert" style="display: none;">
+      <span id="dashboard-alert-msg"></span>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="hideAlert()" style="padding: 0.2rem 0.5rem !important;">✕</button>
+    </div>
+
+    <!-- Hero Header Card -->
+    <div class="dashboard-hero" id="dashboard-hero">
+      <div class="dashboard-hero-content">
+        <span class="dashboard-role-tag role-tag-admin">🛡️ System Administrator</span>
+        <h1 class="dashboard-hero-title">Welcome, {{ user_name }}!</h1>
+        <p class="dashboard-hero-subtitle">
+          Admin Control Center — Schedule, manage, and coordinate voluntary blood donation campaigns and community drives across all regional health networks.
+        </p>
+      </div>
+      <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-refresh-campaigns" onclick="loadAdminCampaigns()">
+          🔄 Refresh
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-toggle-create-form" onclick="toggleCreateForm()">
+          ➕ New Campaign
+        </button>
+        <a href="/logout" class="btn btn-secondary btn-sm" id="btn-hero-signout">
+          🚪 Sign Out
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Statistics -->
+    <div class="dashboard-quick-stats" id="campaign-quick-stats">
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-label">Total Campaigns</div>
+        <div class="dashboard-stat-value" id="stat-total-campaigns">0</div>
+        <div class="dashboard-stat-footer">All scheduled & past blood drives</div>
+      </div>
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-label">Upcoming / Planned</div>
+        <div class="dashboard-stat-value" style="color: #0369a1;" id="stat-upcoming-campaigns">0</div>
+        <div class="dashboard-stat-footer">Drives scheduled for future dates</div>
+      </div>
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-label">Active / Ongoing Now</div>
+        <div class="dashboard-stat-value" style="color: #15803d;" id="stat-ongoing-campaigns">0</div>
+        <div class="dashboard-stat-footer">Currently active donation drives</div>
+      </div>
+      <div class="dashboard-stat-card">
+        <div class="dashboard-stat-label">Completed / Cancelled</div>
+        <div class="dashboard-stat-value" style="color: #64748b;" id="stat-completed-campaigns">0</div>
+        <div class="dashboard-stat-footer">Past drives & concluded drives</div>
+      </div>
+    </div>
+
+    <!-- Collapsible Create Campaign Section -->
+    <div class="dashboard-section-card" id="section-create-campaign" style="margin-bottom: 2rem;">
+      <div class="dashboard-section-header">
+        <div>
+          <h2 class="dashboard-section-title">
+            <span>📅</span> Schedule New Blood Donation Campaign
+          </h2>
+          <p class="dashboard-section-desc">
+            Organize a public or hospital-hosted voluntary blood donation camp. Registered donors and recipients will be able to see this event.
+          </p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleCreateForm()" id="btn-collapse-toggle">
+          Hide Form
+        </button>
+      </div>
+
+      <div id="create-campaign-form-container">
+        <form id="create-campaign-form" onsubmit="handleCreateCampaign(event)">
+          <div class="form-grid-2" style="margin-bottom: 1.25rem;">
+            <div class="form-group">
+              <label class="form-label" for="campaign-name">
+                Campaign Name <span class="required-star">*</span>
+              </label>
+              <input type="text" id="campaign-name" name="campaign_name" class="form-control" required maxlength="150" placeholder="e.g. Red Cross City Hall Blood Drive">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="campaign-location">
+                Venue / Location <span class="required-star">*</span>
+              </label>
+              <input type="text" id="campaign-location" name="location" class="form-control" required maxlength="150" placeholder="e.g. Civic Auditorium, Ground Floor, Mumbai">
+            </div>
+          </div>
+
+          <div class="form-grid-3" style="margin-bottom: 1.25rem;">
+            <div class="form-group">
+              <label class="form-label" for="campaign-start-date">
+                Start Date & Time <span class="required-star">*</span>
+              </label>
+              <input type="datetime-local" id="campaign-start-date" name="start_date" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="campaign-end-date">
+                End Date & Time <span class="required-star">*</span>
+              </label>
+              <input type="datetime-local" id="campaign-end-date" name="end_date" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="campaign-status">
+                Initial Status <span class="required-star">*</span>
+              </label>
+              <select id="campaign-status" name="status" class="form-control" required>
+                <option value="UPCOMING" selected>UPCOMING (Planned)</option>
+                <option value="ONGOING">ONGOING (Active Now)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label class="form-label" for="campaign-description">
+              Campaign Description / Important Notes (Optional)
+            </label>
+            <textarea id="campaign-description" name="description" class="form-control" rows="3" placeholder="e.g. Free health check-up, refreshments, and donor certificates will be provided to all voluntary donors. Walk-ins welcome."></textarea>
+          </div>
+
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <button type="submit" class="btn btn-primary" id="btn-submit-campaign">
+              🚀 Publish Campaign
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="resetCreateForm()">
+              Clear
+            </button>
+            <span id="create-campaign-spinner" class="spinner" style="display: none; width: 22px; height: 22px; margin: 0;"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Campaigns Management Table Section -->
+    <div class="dashboard-section-card" id="section-campaigns-list">
+      <div class="dashboard-section-header" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 class="dashboard-section-title">
+            <span>🏕️</span> Blood Donation Campaigns Management
+          </h2>
+          <p class="dashboard-section-desc">
+            Review all registered donation drives, edit event details, and update live operational statuses.
+          </p>
+        </div>
+
+        <!-- Filter tabs -->
+        <div class="campaign-filter-tabs" id="campaign-filter-tabs">
+          <button type="button" class="campaign-filter-btn active" data-filter="ALL" onclick="setFilter('ALL')">All</button>
+          <button type="button" class="campaign-filter-btn" data-filter="UPCOMING" onclick="setFilter('UPCOMING')">🗓️ Upcoming</button>
+          <button type="button" class="campaign-filter-btn" data-filter="ONGOING" onclick="setFilter('ONGOING')">🟢 Ongoing</button>
+          <button type="button" class="campaign-filter-btn" data-filter="COMPLETED" onclick="setFilter('COMPLETED')">✅ Completed</button>
+          <button type="button" class="campaign-filter-btn" data-filter="CANCELLED" onclick="setFilter('CANCELLED')">🚫 Cancelled</button>
+        </div>
+      </div>
+
+      <!-- Quick Search input -->
+      <div style="margin-bottom: 1.25rem;">
+        <input type="text" id="campaign-search-input" class="form-control" placeholder="🔍 Search campaigns by title or location..." oninput="handleSearchInput()">
+      </div>
+
+      <!-- Table View -->
+      <div class="dashboard-table-wrapper">
+        <table class="dashboard-table" id="table-campaigns">
+          <thead>
+            <tr>
+              <th style="width: 5%;">ID</th>
+              <th style="width: 25%;">Campaign & Description</th>
+              <th style="width: 20%;">Location</th>
+              <th style="width: 18%;">Start Date & Time</th>
+              <th style="width: 18%;">End Date & Time</th>
+              <th style="width: 10%;">Status</th>
+              <th style="width: 14%;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-campaigns">
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+                <div class="spinner" style="margin: 0 auto 0.75rem auto;"></div>
+                Loading donation campaigns...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Edit Campaign Modal Dialog -->
+  <div class="modal-overlay" id="edit-campaign-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <div class="modal-icon">✏️</div>
+          <div>
+            <div class="modal-title">Edit Campaign Details</div>
+            <div class="modal-subtitle">Update campaign information, location, dates, or status</div>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeEditModal()" aria-label="Close modal">✕</button>
+      </div>
+
+      <form id="edit-campaign-form" onsubmit="handleEditCampaign(event)">
+        <input type="hidden" id="edit-campaign-id" name="campaign_id">
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label class="form-label" for="edit-campaign-name">Campaign Name <span class="required-star">*</span></label>
+          <input type="text" id="edit-campaign-name" name="campaign_name" class="form-control" required maxlength="150">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label class="form-label" for="edit-campaign-location">Location / Venue <span class="required-star">*</span></label>
+          <input type="text" id="edit-campaign-location" name="location" class="form-control" required maxlength="150">
+        </div>
+
+        <div class="form-grid-2" style="margin-bottom: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="edit-campaign-start">Start Date & Time <span class="required-star">*</span></label>
+            <input type="datetime-local" id="edit-campaign-start" name="start_date" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-campaign-end">End Date & Time <span class="required-star">*</span></label>
+            <input type="datetime-local" id="edit-campaign-end" name="end_date" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label class="form-label" for="edit-campaign-status">Campaign Status <span class="required-star">*</span></label>
+          <select id="edit-campaign-status" name="status" class="form-control" required>
+            <option value="UPCOMING">UPCOMING (Planned)</option>
+            <option value="ONGOING">ONGOING (Active Now)</option>
+            <option value="COMPLETED">COMPLETED (Concluded)</option>
+            <option value="CANCELLED">CANCELLED</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.25rem;">
+          <label class="form-label" for="edit-campaign-description">Description</label>
+          <textarea id="edit-campaign-description" name="description" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-edit-campaign">
+            💾 Save Changes
+          </button>
+          <span id="edit-campaign-spinner" class="spinner" style="display: none; width: 20px; height: 20px; margin: 0;"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Vanilla JavaScript Logic -->
+  <script>
+    let allCampaigns = [];
+    let currentFilter = 'ALL';
+    let searchQuery = '';
+
+    function showAlert(message, type = "success") {
+      const alertBox = document.getElementById("dashboard-alert");
+      const msgSpan = document.getElementById("dashboard-alert-msg");
+      alertBox.className = `dashboard-alert alert-${type}`;
+      msgSpan.textContent = message;
+      alertBox.style.display = "flex";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function hideAlert() {
+      const alertBox = document.getElementById("dashboard-alert");
+      alertBox.style.display = "none";
+    }
+
+    function toggleCreateForm() {
+      const container = document.getElementById("create-campaign-form-container");
+      const btn = document.getElementById("btn-collapse-toggle");
+      if (container.style.display === "none") {
+        container.style.display = "block";
+        btn.textContent = "Hide Form";
+      } else {
+        container.style.display = "none";
+        btn.textContent = "Show Form";
+      }
+    }
+
+    function resetCreateForm() {
+      document.getElementById("create-campaign-form").reset();
+    }
+
+    function formatDateTime(dtStr) {
+      if (!dtStr) return "N/A";
+      try {
+        const d = new Date(dtStr);
+        if (isNaN(d.getTime())) return dtStr;
+        return d.toLocaleString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true
+        });
+      } catch (e) {
+        return dtStr;
+      }
+    }
+
+    function toDatetimeLocalString(dtStr) {
+      if (!dtStr) return "";
+      try {
+        const d = new Date(dtStr);
+        if (isNaN(d.getTime())) {
+          return dtStr.replace(" ", "T").substring(0, 16);
+        }
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      } catch (e) {
+        return "";
+      }
+    }
+
+    function getStatusBadge(status, displayStatus) {
+      const effective = (displayStatus || status || "UPCOMING").toUpperCase();
+      if (effective === "ONGOING") {
+        return '<span class="dashboard-pill pill-status-ongoing">🟢 Ongoing</span>';
+      } else if (effective === "UPCOMING" || effective === "PLANNED") {
+        return '<span class="dashboard-pill pill-status-upcoming">🗓️ Upcoming</span>';
+      } else if (effective === "COMPLETED") {
+        return '<span class="dashboard-pill pill-status-completed">✅ Completed</span>';
+      } else if (effective === "CANCELLED") {
+        return '<span class="dashboard-pill pill-status-cancelled">🚫 Cancelled</span>';
+      }
+      return `<span class="dashboard-pill pill-status-upcoming">${effective}</span>`;
+    }
+
+    async function loadAdminCampaigns() {
+      hideAlert();
+      const tbody = document.getElementById("tbody-campaigns");
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2.5rem;">
+            <div class="spinner" style="margin: 0 auto 0.75rem auto;"></div>
+            Loading donation campaigns...
+          </td>
+        </tr>
+      `;
+
+      try {
+        const res = await fetch("/campaigns?status=ALL", { credentials: "same-origin" });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Failed to load campaigns.");
+        }
+
+        allCampaigns = await res.json();
+        updateStatistics(allCampaigns);
+        renderCampaignsTable();
+      } catch (err) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--accent-red); padding: 2.5rem;">
+              ⚠️ ${err.message}
+            </td>
+          </tr>
+        `;
+        showAlert(err.message, "danger");
+      }
+    }
+
+    function updateStatistics(campaigns) {
+      let upcoming = 0;
+      let ongoing = 0;
+      let completedOrCancelled = 0;
+
+      campaigns.forEach(c => {
+        const eff = (c.display_status || c.status || "").toUpperCase();
+        if (eff === "ONGOING") ongoing++;
+        else if (eff === "UPCOMING" || eff === "PLANNED") upcoming++;
+        else if (eff === "COMPLETED" || eff === "CANCELLED") completedOrCancelled++;
+      });
+
+      document.getElementById("stat-total-campaigns").textContent = campaigns.length;
+      document.getElementById("stat-upcoming-campaigns").textContent = upcoming;
+      document.getElementById("stat-ongoing-campaigns").textContent = ongoing;
+      document.getElementById("stat-completed-campaigns").textContent = completedOrCancelled;
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll(".campaign-filter-btn").forEach(btn => {
+        if (btn.getAttribute("data-filter") === filter) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+      renderCampaignsTable();
+    }
+
+    function handleSearchInput() {
+      searchQuery = (document.getElementById("campaign-search-input").value || "").trim().toLowerCase();
+      renderCampaignsTable();
+    }
+
+    function renderCampaignsTable() {
+      const tbody = document.getElementById("tbody-campaigns");
+      let filtered = allCampaigns.filter(c => {
+        const eff = (c.display_status || c.status || "").toUpperCase();
+        if (currentFilter !== 'ALL') {
+          if (currentFilter === 'UPCOMING' && eff !== 'UPCOMING' && eff !== 'PLANNED') return false;
+          if (currentFilter === 'ONGOING' && eff !== 'ONGOING') return false;
+          if (currentFilter === 'COMPLETED' && eff !== 'COMPLETED') return false;
+          if (currentFilter === 'CANCELLED' && eff !== 'CANCELLED') return false;
+        }
+
+        if (searchQuery) {
+          const name = (c.campaign_name || "").toLowerCase();
+          const loc = (c.location || "").toLowerCase();
+          const desc = (c.description || "").toLowerCase();
+          if (!name.includes(searchQuery) && !loc.includes(searchQuery) && !desc.includes(searchQuery)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+              No campaigns found matching the current criteria.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(c => {
+        const statusBadge = getStatusBadge(c.status, c.display_status);
+        const descHtml = c.description ? `<p style="font-size:0.82rem; color:var(--text-muted); margin-top:0.25rem;">${escapeHtml(c.description)}</p>` : '';
+        return `
+          <tr id="campaign-row-${c.campaign_id}">
+            <td><strong>#${c.campaign_id}</strong></td>
+            <td>
+              <strong style="color: var(--text-main); font-size: 0.95rem;">${escapeHtml(c.campaign_name)}</strong>
+              ${descHtml}
+            </td>
+            <td>📍 ${escapeHtml(c.location)}</td>
+            <td>📅 ${formatDateTime(c.start_date_iso || c.start_date)}</td>
+            <td>📅 ${formatDateTime(c.end_date_iso || c.end_date)}</td>
+            <td>${statusBadge}</td>
+            <td>
+              <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="openEditModal(${c.campaign_id})" title="Edit details" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">
+                  ✏️ Edit
+                </button>
+                <div class="dropdown-quick-status" style="position: relative; display: inline-block;">
+                  <select onchange="updateCampaignStatus(${c.campaign_id}, this.value); this.selectedIndex = 0;" style="padding: 0.25rem 0.4rem; font-size: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); background: var(--bg-subtle);">
+                    <option value="" disabled selected>Status ▾</option>
+                    <option value="UPCOMING">Set Upcoming</option>
+                    <option value="ONGOING">Set Ongoing</option>
+                    <option value="COMPLETED">Set Completed</option>
+                    <option value="CANCELLED">Set Cancelled</option>
+                  </select>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="deleteCampaign(${c.campaign_id})" title="Delete" style="padding: 0.25rem 0.45rem; font-size: 0.75rem; color: var(--accent-red);">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return str.replace(/[&<>"']/g, function(m) {
+        return ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        })[m];
+      });
+    }
+
+    async function handleCreateCampaign(e) {
+      e.preventDefault();
+      hideAlert();
+      const spinner = document.getElementById("create-campaign-spinner");
+      const submitBtn = document.getElementById("btn-submit-campaign");
+
+      const name = document.getElementById("campaign-name").value.trim();
+      const location = document.getElementById("campaign-location").value.trim();
+      const startDate = document.getElementById("campaign-start-date").value;
+      const endDate = document.getElementById("campaign-end-date").value;
+      const status = document.getElementById("campaign-status").value;
+      const description = document.getElementById("campaign-description").value.trim();
+
+      if (!name || !location || !startDate || !endDate) {
+        showAlert("Please fill in all required campaign fields.", "danger");
+        return;
+      }
+
+      if (new Date(endDate) <= new Date(startDate)) {
+        showAlert("Campaign end date and time must be after the start date and time.", "danger");
+        return;
+      }
+
+      spinner.style.display = "inline-block";
+      submitBtn.disabled = true;
+
+      try {
+        const payload = {
+          campaign_name: name,
+          location: location,
+          start_date: startDate,
+          end_date: endDate,
+          status: status,
+          description: description || null
+        };
+
+        const res = await fetch("/campaigns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to create campaign.");
+        }
+
+        showAlert(`Campaign "${name}" created successfully!`, "success");
+        resetCreateForm();
+        await loadAdminCampaigns();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      } finally {
+        spinner.style.display = "none";
+        submitBtn.disabled = false;
+      }
+    }
+
+    function openEditModal(campaignId) {
+      const campaign = allCampaigns.find(c => c.campaign_id === campaignId);
+      if (!campaign) {
+        showAlert("Campaign not found.", "danger");
+        return;
+      }
+
+      document.getElementById("edit-campaign-id").value = campaign.campaign_id;
+      document.getElementById("edit-campaign-name").value = campaign.campaign_name || "";
+      document.getElementById("edit-campaign-location").value = campaign.location || "";
+      document.getElementById("edit-campaign-start").value = toDatetimeLocalString(campaign.start_date_iso || campaign.start_date);
+      document.getElementById("edit-campaign-end").value = toDatetimeLocalString(campaign.end_date_iso || campaign.end_date);
+      document.getElementById("edit-campaign-status").value = (campaign.status || "UPCOMING").toUpperCase();
+      document.getElementById("edit-campaign-description").value = campaign.description || "";
+
+      document.getElementById("edit-campaign-modal").style.display = "flex";
+    }
+
+    function closeEditModal() {
+      document.getElementById("edit-campaign-modal").style.display = "none";
+    }
+
+    async function handleEditCampaign(e) {
+      e.preventDefault();
+      const spinner = document.getElementById("edit-campaign-spinner");
+      const saveBtn = document.getElementById("btn-save-edit-campaign");
+
+      const id = document.getElementById("edit-campaign-id").value;
+      const name = document.getElementById("edit-campaign-name").value.trim();
+      const location = document.getElementById("edit-campaign-location").value.trim();
+      const startDate = document.getElementById("edit-campaign-start").value;
+      const endDate = document.getElementById("edit-campaign-end").value;
+      const status = document.getElementById("edit-campaign-status").value;
+      const description = document.getElementById("edit-campaign-description").value.trim();
+
+      if (!name || !location || !startDate || !endDate) {
+        showAlert("All required fields must be filled.", "danger");
+        return;
+      }
+
+      if (new Date(endDate) <= new Date(startDate)) {
+        showAlert("End date/time must be strictly after start date/time.", "danger");
+        return;
+      }
+
+      spinner.style.display = "inline-block";
+      saveBtn.disabled = true;
+
+      try {
+        const payload = {
+          campaign_name: name,
+          location: location,
+          start_date: startDate,
+          end_date: endDate,
+          status: status,
+          description: description || null
+        };
+
+        const res = await fetch(`/campaigns/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to update campaign.");
+        }
+
+        closeEditModal();
+        showAlert(`Campaign #${id} updated successfully!`, "success");
+        await loadAdminCampaigns();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      } finally {
+        spinner.style.display = "none";
+        saveBtn.disabled = false;
+      }
+    }
+
+    async function updateCampaignStatus(campaignId, newStatus) {
+      if (!newStatus) return;
+      try {
+        const res = await fetch(`/campaigns/${campaignId}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ status: newStatus })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to update campaign status.");
+        }
+
+        showAlert(`Campaign #${campaignId} status marked as ${newStatus}.`, "success");
+        await loadAdminCampaigns();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      }
+    }
+
+    async function deleteCampaign(campaignId) {
+      if (!confirm(`Are you sure you want to delete Campaign #${campaignId}? This action cannot be undone.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/campaigns/${campaignId}`, {
+          method: "DELETE",
+          credentials: "same-origin"
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to delete campaign.");
+        }
+
+        showAlert(`Campaign #${campaignId} deleted successfully.`, "info");
+        await loadAdminCampaigns();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      }
+    }
+
+    // Initialize on page load
+    document.addEventListener("DOMContentLoaded", () => {
+      loadAdminCampaigns();
+    });
+  </script>
+
+</body>
+</html>

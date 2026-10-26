@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recipient Portal — BloodLink</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="brand-logo" id="brand-logo-link">
+        <span class="brand-icon">🩸</span>
+        <div class="brand-title">
+          <span class="brand-name">BloodLink</span>
+          <span class="brand-subtitle">Recipient Portal</span>
+        </div>
+      </a>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="/" id="nav-link-home">Home</a></li>
+          <li>
+            <span class="dashboard-role-tag role-tag-recipient" style="margin-bottom:0;">
+              🏥 {{ user_role }}
+            </span>
+          </li>
+          <li><a href="/logout" class="nav-auth-link" id="nav-link-logout">🚪 Logout</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="dashboard-container">
+
+    <!-- Global Alert Box -->
+    <div id="dashboard-alert" class="dashboard-alert" style="display: none;">
+      <span id="dashboard-alert-msg"></span>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="hideAlert()" style="padding: 0.2rem 0.5rem !important;">✕</button>
+    </div>
+
+    <!-- Hero Header Card -->
+    <div class="dashboard-hero" id="dashboard-hero">
+      <div class="dashboard-hero-content">
+        <span class="dashboard-role-tag role-tag-recipient">🏥 Transfusion Recipient / Patient</span>
+        <h1 class="dashboard-hero-title">Welcome, {{ user_name }}!</h1>
+        <p class="dashboard-hero-subtitle">
+          Manage clinical patient intake records, broadcast urgent emergency blood requests, and search for compatible voluntary blood donors.
+        </p>
+      </div>
+      <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-refresh-dashboard" onclick="loadRecipientProfile()">
+          🔄 Refresh
+        </button>
+        <a href="/logout" class="btn btn-primary btn-sm" id="btn-hero-signout">
+          🚪 Sign Out
+        </a>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="recipient-loading-section" style="text-align: center; padding: 3rem 0;">
+      <div class="spinner"></div>
+      <p style="color: var(--text-muted); font-weight: 600;">Loading your patient profile...</p>
+    </div>
+
+    <!-- UNLINKED PROFILE STATE (404) -->
+    <div id="recipient-unlinked-section" style="display: none;">
+      <div class="dashboard-section-card">
+        <div class="dashboard-section-header">
+          <div>
+            <h2 class="dashboard-section-title">
+              <span>⚠️</span> Complete Patient Intake Registration
+            </h2>
+            <p class="dashboard-section-desc">
+              Your account is authenticated, but not yet linked to a recipient profile in the database. Please complete your clinical intake profile below before posting emergency requests.
+            </p>
+          </div>
+        </div>
+
+        <form id="create-recipient-form" onsubmit="handleCreateRecipientProfile(event)">
+          <div class="form-grid-2" style="margin-bottom: 1.25rem;">
+            <div class="form-group">
+              <label class="form-label" for="create-rec-name">Full Patient Name <span class="required-star">*</span></label>
+              <input type="text" id="create-rec-name" name="name" class="form-control" value="{{ user_name }}" required placeholder="e.g. Priya Sharma">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="create-rec-blood-group">Required Blood Group <span class="required-star">*</span></label>
+              <select id="create-rec-blood-group" name="blood_group" class="form-control" required>
+                <option value="" disabled selected>Select Blood Group</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+ (Universal Recipient)</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-3" style="margin-bottom: 1.25rem;">
+            <div class="form-group">
+              <label class="form-label" for="create-rec-phone">Contact Phone (10 digits) <span class="required-star">*</span></label>
+              <input type="tel" id="create-rec-phone" name="phone" class="form-control" required pattern="[0-9]{10}" placeholder="9876543210" maxlength="10">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="create-rec-location">City / Location <span class="required-star">*</span></label>
+              <input type="text" id="create-rec-location" name="location" class="form-control" required placeholder="e.g. Pune">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="create-rec-age">Age <span class="required-star">*</span></label>
+              <input type="number" id="create-rec-age" name="age" class="form-control" required min="1" max="120" placeholder="32">
+            </div>
+          </div>
+
+          <div class="form-grid-3" style="margin-bottom: 1.5rem;">
+            <div class="form-group">
+              <label class="form-label" for="create-rec-gender">Gender <span class="required-star">*</span></label>
+              <select id="create-rec-gender" name="gender" class="form-control" required>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="create-rec-hospital">Admitting Hospital <span class="required-star">*</span></label>
+              <select id="create-rec-hospital" name="hospital_id" class="form-control" required>
+                <option value="" disabled selected>Loading hospitals...</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="create-rec-units">Units Required (1-20) <span class="required-star">*</span></label>
+              <input type="number" id="create-rec-units" name="units_required" class="form-control" required min="1" max="20" value="2">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.75rem;">
+            <label class="form-label" for="create-rec-emergency-level">Clinical Priority / Urgency <span class="required-star">*</span></label>
+            <select id="create-rec-emergency-level" name="emergency_level" class="form-control" required>
+              <option value="CRITICAL">🔴 CRITICAL (Immediate transfusion required)</option>
+              <option value="HIGH" selected>🟠 HIGH (Within 12-24 hours)</option>
+              <option value="NORMAL">🔵 NORMAL (Scheduled surgery / transfusion)</option>
+              <option value="LOW">⚪ LOW (Elective observation)</option>
+            </select>
+          </div>
+
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <button type="submit" class="btn btn-primary" id="btn-submit-create-recipient">
+              💾 Register Patient Profile
+            </button>
+            <span id="create-rec-spinner" class="spinner" style="display: none; width: 24px; height: 24px; margin: 0;"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ACTIVE PROFILE STATE (200) -->
+    <div id="recipient-active-section" style="display: none;">
+
+      <!-- Quick Metrics Row -->
+      <div class="dashboard-quick-stats">
+        <!-- Blood Group Needed -->
+        <div class="dashboard-stat-card">
+          <div>
+            <div class="dashboard-stat-label">Blood Group Needed</div>
+            <div class="dashboard-stat-value">
+              <span style="color: var(--primary-dark-red); font-size: 2.2rem;" id="display-stat-rec-blood">--</span>
+            </div>
+            <div class="dashboard-stat-footer" id="display-stat-rec-units">
+              Target requirement: -- units
+            </div>
+          </div>
+          <div style="margin-top: 1.25rem;">
+            <span class="compatible-tag" id="display-rec-tag">Verified Recipient</span>
+          </div>
+        </div>
+
+        <!-- Admitting Facility -->
+        <div class="dashboard-stat-card">
+          <div>
+            <div class="dashboard-stat-label">Admitting Clinical Facility</div>
+            <div class="dashboard-stat-value" style="font-size: 1.25rem;" id="display-stat-rec-hospital">
+              --
+            </div>
+            <div class="dashboard-stat-footer" id="display-stat-rec-location">
+              Location: --
+            </div>
+          </div>
+          <div style="margin-top: 1.25rem;">
+            <span style="font-size: 0.85rem; color: var(--text-muted);" id="display-rec-hospital-city">City: --</span>
+          </div>
+        </div>
+
+        <!-- Emergency Level -->
+        <div class="dashboard-stat-card">
+          <div>
+            <div class="dashboard-stat-label">Clinical Urgency Level</div>
+            <div class="dashboard-stat-value" id="display-stat-rec-urgency">
+              <span class="dashboard-pill pill-high">HIGH</span>
+            </div>
+            <div class="dashboard-stat-footer">
+              Triage priority for voluntary donor matching.
+            </div>
+          </div>
+          <div style="margin-top: 1.25rem;">
+            <a href="#section-create-emergency" class="btn btn-primary btn-sm" style="text-decoration: none;">
+              🚨 Broadcast Request
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Patient Profile Details Card -->
+      <div class="dashboard-section-card" id="recipient-profile-card">
+        <div class="dashboard-section-header">
+          <div>
+            <h2 class="dashboard-section-title">
+              <span>👤</span> Patient Intake Records
+            </h2>
+            <p class="dashboard-section-desc">
+              Your registered clinical intake details. Permitted fields can be updated below.
+            </p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-edit-rec" onclick="toggleEditRecipientForm()">
+              ✏️ Edit Profile
+            </button>
+          </div>
+        </div>
+
+        <!-- Read-Only Profile View -->
+        <div id="recipient-profile-view" class="dashboard-data-grid">
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Patient Name</div>
+            <div class="dashboard-cell-value" id="view-rec-name">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Blood Group Required</div>
+            <div class="dashboard-cell-value" id="view-rec-blood">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Contact Phone (Private)</div>
+            <div class="dashboard-cell-value" id="view-rec-phone">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">City / Location</div>
+            <div class="dashboard-cell-value" id="view-rec-location">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Age & Gender</div>
+            <div class="dashboard-cell-value" id="view-rec-age-gender">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Admitting Hospital</div>
+            <div class="dashboard-cell-value" id="view-rec-hospital">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Units Needed</div>
+            <div class="dashboard-cell-value" id="view-rec-units">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Emergency Priority</div>
+            <div class="dashboard-cell-value" id="view-rec-urgency">--</div>
+          </div>
+        </div>
+
+        <!-- Inline Edit Form (Hidden by default) -->
+        <div id="recipient-edit-container" style="display: none; margin-top: 1.75rem; border-top: 1.5px solid var(--border-subtle); padding-top: 1.5rem;">
+          <h3 style="font-size: 1.1rem; color: var(--primary-dark-red); margin-bottom: 1.25rem;">
+            ✏️ Edit Patient Profile Details
+          </h3>
+          <form id="edit-recipient-form" onsubmit="handleUpdateRecipientProfile(event)">
+            <div class="form-grid-2" style="margin-bottom: 1.25rem;">
+              <div class="form-group">
+                <label class="form-label" for="edit-rec-name">Patient Name <span class="required-star">*</span></label>
+                <input type="text" id="edit-rec-name" name="name" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-rec-blood-group">Required Blood Group <span class="required-star">*</span></label>
+                <select id="edit-rec-blood-group" name="blood_group" class="form-control" required>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid-3" style="margin-bottom: 1.25rem;">
+              <div class="form-group">
+                <label class="form-label" for="edit-rec-phone">Phone Number <span class="required-star">*</span></label>
+                <input type="tel" id="edit-rec-phone" name="phone" class="form-control" required pattern="[0-9]{10}" maxlength="10">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-rec-location">City / Location <span class="required-star">*</span></label>
+                <input type="text" id="edit-rec-location" name="location" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-rec-age">Age <span class="required-star">*</span></label>
+                <input type="number" id="edit-rec-age" name="age" class="form-control" required min="1" max="120">
+              </div>
+            </div>
+
+            <div class="form-grid-3" style="margin-bottom: 1.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="edit-rec-gender">Gender <span class="required-star">*</span></label>
+                <select id="edit-rec-gender" name="gender" class="form-control" required>
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-rec-hospital">Admitting Hospital <span class="required-star">*</span></label>
+                <select id="edit-rec-hospital" name="hospital_id" class="form-control" required>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-rec-units">Units Required (1-20) <span class="required-star">*</span></label>
+                <input type="number" id="edit-rec-units" name="units_required" class="form-control" required min="1" max="20">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+              <label class="form-label" for="edit-rec-emergency-level">Clinical Priority / Urgency <span class="required-star">*</span></label>
+              <select id="edit-rec-emergency-level" name="emergency_level" class="form-control" required>
+                <option value="CRITICAL">🔴 CRITICAL</option>
+                <option value="HIGH">🟠 HIGH</option>
+                <option value="NORMAL">🔵 NORMAL</option>
+                <option value="LOW">⚪ LOW</option>
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 1rem; align-items: center;">
+              <button type="submit" class="btn btn-primary" id="btn-save-rec-profile">
+                💾 Save Changes
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="toggleEditRecipientForm(false)">
+                Cancel
+              </button>
+              <span id="edit-rec-spinner" class="spinner" style="display: none; width: 24px; height: 24px; margin: 0;"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- CREATE EMERGENCY REQUEST SECTION -->
+      <div class="dashboard-section-card" id="section-create-emergency">
+        <div class="dashboard-section-header">
+          <div>
+            <h2 class="dashboard-section-title">
+              <span>🚨</span> Broadcast Emergency Blood Request
+            </h2>
+            <p class="dashboard-section-desc">
+              Broadcast an urgent request linked to your verified clinical profile. Voluntary donors will be notified through secure match feeds.
+            </p>
+          </div>
+        </div>
+
+        <form id="create-emergency-form" onsubmit="handleCreateEmergencyRequest(event)">
+          <div class="form-grid-2" style="margin-bottom: 1.25rem;">
+            <div class="form-group">
+              <label class="form-label" for="emg-blood-group">Blood Group Required <span class="required-star">*</span></label>
+              <select id="emg-blood-group" name="blood_group_required" class="form-control" required>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="emg-units">Units Required (1-20) <span class="required-star">*</span></label>
+              <input type="number" id="emg-units" name="units_required" class="form-control" required min="1" max="20" value="2">
+            </div>
+          </div>
+
+          <div class="form-grid-2" style="margin-bottom: 1.5rem;">
+            <div class="form-group">
+              <label class="form-label" for="emg-urgency">Emergency Level <span class="required-star">*</span></label>
+              <select id="emg-urgency" name="emergency_level" class="form-control" required>
+                <option value="CRITICAL">🔴 CRITICAL (Immediate Life Threat)</option>
+                <option value="HIGH" selected>🟠 HIGH (Transfusion Needed within 24h)</option>
+                <option value="NORMAL">🔵 NORMAL (Standard Medical Need)</option>
+                <option value="LOW">⚪ LOW (Observation / Backup)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="emg-hospital">Hospital Facility <span class="required-star">*</span></label>
+              <select id="emg-hospital" name="hospital_id" class="form-control" required>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <button type="submit" class="btn btn-primary" id="btn-submit-emergency-request">
+              🚀 Post Urgent Emergency Request
+            </button>
+            <span id="create-emergency-spinner" class="spinner" style="display: none; width: 24px; height: 24px; margin: 0;"></span>
+          </div>
+        </form>
+      </div>
+
+      <!-- PERSONAL REQUEST HISTORY SECTION -->
+      <div class="dashboard-section-card" id="section-my-emergency-history">
+        <div class="dashboard-section-header">
+          <div>
+            <h2 class="dashboard-section-title">
+              <span>📋</span> My Emergency Request History
+            </h2>
+            <p class="dashboard-section-desc">
+              All emergency requests initiated by your authenticated account. Cross-account records are strictly segregated.
+            </p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="loadMyEmergencyHistory()">
+              🔄 Refresh History
+            </button>
+          </div>
+        </div>
+
+        <div class="dashboard-table-wrapper">
+          <table class="dashboard-table" id="table-my-requests">
+            <thead>
+              <tr>
+                <th>Request ID</th>
+                <th>Blood Required</th>
+                <th>Units</th>
+                <th>Urgency Level</th>
+                <th>Hospital & Location</th>
+                <th>Date Posted</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-my-requests">
+              <tr>
+                <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                  Loading your emergency requests...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- INCOMING DONOR OFFERS SECTION -->
+      <div class="dashboard-section-card" id="section-incoming-donor-offers">
+        <div class="dashboard-section-header">
+          <div>
+            <h2 class="dashboard-section-title">
+              <span>🤝</span> Voluntary Donor Offers for My Emergency Requests
+            </h2>
+            <p class="dashboard-section-desc">
+              Review and accept donation offers from voluntary blood donors responding to your emergency requests. Contact telephone numbers are protected and only unlocked upon mutual acceptance and explicit consent.
+            </p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="loadIncomingOffers()">
+              🔄 Refresh Offers
+            </button>
+          </div>
+        </div>
+
+        <div class="dashboard-table-wrapper">
+          <table class="dashboard-table" id="table-incoming-offers">
+            <thead>
+              <tr>
+                <th>Offer ID</th>
+                <th>Emergency Req</th>
+                <th>Donor Details</th>
+                <th>Blood Group</th>
+                <th>Location</th>
+                <th>Offer Status</th>
+                <th>Verified Contact</th>
+                <th>Date Offered</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-incoming-offers">
+              <tr>
+                <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                  Loading donor offers...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SEARCH COMPATIBLE DONORS SECTION -->
+      <div class="dashboard-section-card" id="section-search-donors">
+        <div class="dashboard-section-header">
+          <div>
+            <h2 class="dashboard-section-title">
+              <span>🔍</span> Search Compatible Voluntary Donors
+            </h2>
+            <p class="dashboard-section-desc">
+              Search available donors by blood compatibility and location. Donor contact phone numbers and internal IDs are strictly private and protected.
+            </p>
+          </div>
+        </div>
+
+        <!-- Search Filter Form -->
+        <form id="search-donors-form" onsubmit="handleSearchDonors(event)" style="margin-bottom: 1.5rem;">
+          <div class="form-grid-3" style="align-items: flex-end;">
+            <div class="form-group">
+              <label class="form-label" for="search-blood-group">Recipient Blood Group <span class="required-star">*</span></label>
+              <select id="search-blood-group" name="blood_group" class="form-control" required>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="search-location">City / Location <span class="optional-tag">(Optional)</span></label>
+              <input type="text" id="search-location" name="location" class="form-control" placeholder="e.g. Mumbai">
+            </div>
+
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary" id="btn-search-donors" style="height: 48px; width: 100%;">
+                🔎 Search Donors
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Privacy Assurance Notice -->
+        <div class="contact-protected-box" style="margin-bottom: 1.5rem;">
+          <span>🔒</span>
+          <span><strong>Contact Details Private:</strong> To safeguard donor privacy and prevent unsolicited calls, direct telephone numbers and user IDs are not disclosed in search results. Mutual consent workflows will facilitate safe communication.</span>
+        </div>
+
+        <!-- Search Results Container -->
+        <div id="search-results-wrapper" style="display: none;">
+          <div class="dashboard-table-wrapper">
+            <table class="dashboard-table" id="table-search-results">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Donor Name</th>
+                  <th>Blood Group</th>
+                  <th>Location</th>
+                  <th>Age & Gender</th>
+                  <th>Availability</th>
+                  <th>Match Score</th>
+                  <th>Contact Status</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-search-results">
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="search-loading" style="display: none; text-align: center; padding: 2rem;">
+          <div class="spinner"></div>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Searching compatible voluntary donors...</p>
+        </div>
+
+      </div>
+
+      <!-- Blood Donation Campaigns Section -->
+      <div class="dashboard-section-card" id="recipient-campaigns-card">
+        <div class="dashboard-section-header" style="flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h2 class="dashboard-section-title">
+              <span>🏕️</span> Blood Donation Campaigns & Community Drives
+            </h2>
+            <p class="dashboard-section-desc">
+              Explore public and hospital-sponsored voluntary blood donation campaigns and community collection drives.
+            </p>
+          </div>
+          <div class="campaign-filter-tabs" id="recipient-campaign-filter-tabs">
+            <button type="button" class="campaign-filter-btn active" data-filter="ALL" onclick="setRecipientCampaignFilter('ALL')">All</button>
+            <button type="button" class="campaign-filter-btn" data-filter="UPCOMING" onclick="setRecipientCampaignFilter('UPCOMING')">🗓️ Upcoming</button>
+            <button type="button" class="campaign-filter-btn" data-filter="ONGOING" onclick="setRecipientCampaignFilter('ONGOING')">🟢 Ongoing</button>
+            <button type="button" class="campaign-filter-btn" data-filter="COMPLETED" onclick="setRecipientCampaignFilter('COMPLETED')">✅ Completed</button>
+            <button type="button" class="campaign-filter-btn" data-filter="CANCELLED" onclick="setRecipientCampaignFilter('CANCELLED')">🚫 Cancelled</button>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div style="margin-bottom: 1rem;">
+          <input type="text" id="recipient-campaign-search" class="form-control" placeholder="🔍 Search campaigns by title or location..." oninput="handleRecipientCampaignSearch()">
+        </div>
+
+        <!-- Campaign Cards Container -->
+        <div id="recipient-campaigns-container">
+          <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
+            <div class="spinner" style="margin: 0 auto 0.75rem auto;"></div>
+            Loading blood donation campaigns...
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Vanilla JavaScript Logic -->
+  <script>
+    // State management
+    let currentRecipient = null;
+    let hospitalsList = [];
+    let hospitalsMap = {};
+    let myEmergencyRequests = [];
+    let incomingOffers = [];
+
+    function showAlert(message, type = "success") {
+      const alertBox = document.getElementById("dashboard-alert");
+      const msgSpan = document.getElementById("dashboard-alert-msg");
+      alertBox.className = `dashboard-alert alert-${type}`;
+      msgSpan.textContent = message;
+      alertBox.style.display = "flex";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function hideAlert() {
+      const alertBox = document.getElementById("dashboard-alert");
+      alertBox.style.display = "none";
+    }
+
+    // Populate hospital dropdowns
+    async function loadHospitals() {
+      try {
+        const res = await fetch("/hospitals", { credentials: "same-origin" });
+        if (res.ok) {
+          hospitalsList = await res.json();
+          hospitalsMap = {};
+          hospitalsList.forEach(h => {
+            hospitalsMap[h.hospital_id] = h;
+          });
+
+          // Populate dropdowns
+          populateHospitalSelect("create-rec-hospital");
+          populateHospitalSelect("edit-rec-hospital");
+          populateHospitalSelect("emg-hospital");
+        }
+      } catch (err) {
+        console.warn("Could not fetch hospitals:", err);
+      }
+    }
+
+    function populateHospitalSelect(selectId) {
+      const sel = document.getElementById(selectId);
+      if (!sel) return;
+      sel.innerHTML = hospitalsList.map(h => 
+        `<option value="${h.hospital_id}">${h.hospital_name} (${h.city || ''})</option>`
+      ).join("");
+    }
+
+    // Fetch authenticated recipient's profile
+    async function loadRecipientProfile() {
+      hideAlert();
+      document.getElementById("recipient-loading-section").style.display = "block";
+      document.getElementById("recipient-unlinked-section").style.display = "none";
+      document.getElementById("recipient-active-section").style.display = "none";
+
+      try {
+        await loadHospitals();
+        const res = await fetch("/recipient/me", { credentials: "same-origin" });
+
+        if (res.status === 404) {
+          // Unlinked profile state
+          document.getElementById("recipient-loading-section").style.display = "none";
+          document.getElementById("recipient-unlinked-section").style.display = "block";
+          return;
+        }
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || errData.message || "Failed to load recipient profile.");
+        }
+
+        currentRecipient = await res.json();
+        renderRecipientProfile(currentRecipient);
+        document.getElementById("recipient-loading-section").style.display = "none";
+        document.getElementById("recipient-active-section").style.display = "block";
+
+        // Load personal emergency history, incoming offers, and campaigns
+        await loadMyEmergencyHistory();
+        await loadIncomingOffers();
+        await loadRecipientCampaigns();
+
+        // Run default donor search
+        if (currentRecipient.blood_group) {
+          document.getElementById("search-blood-group").value = currentRecipient.blood_group;
+          document.getElementById("search-location").value = currentRecipient.location || "";
+          executeDonorSearch(currentRecipient.blood_group, currentRecipient.location || "");
+        }
+
+      } catch (err) {
+        document.getElementById("recipient-loading-section").style.display = "none";
+        showAlert(err.message || "An unexpected error occurred while loading profile.", "danger");
+      }
+    }
+
+    function renderRecipientProfile(rec) {
+      // Metric cards
+      document.getElementById("display-stat-rec-blood").textContent = rec.blood_group || "--";
+      document.getElementById("display-stat-rec-units").textContent = `Target requirement: ${rec.units_required || 1} units`;
+
+      const hospitalName = rec.hospital_name || (hospitalsMap[rec.hospital_id] ? hospitalsMap[rec.hospital_id].hospital_name : "Not assigned");
+      const hospitalCity = rec.hospital_city || (hospitalsMap[rec.hospital_id] ? hospitalsMap[rec.hospital_id].city : "--");
+
+      document.getElementById("display-stat-rec-hospital").textContent = hospitalName;
+      document.getElementById("display-stat-rec-location").textContent = `Patient Location: ${rec.location || '--'}`;
+      document.getElementById("display-rec-hospital-city").textContent = `Facility Location: ${hospitalCity}`;
+
+      const urgencyLevel = (rec.emergency_level || 'NORMAL').toUpperCase();
+      const urgencyClass = `pill-${urgencyLevel.toLowerCase()}`;
+      document.getElementById("display-stat-rec-urgency").innerHTML = `
+        <span class="dashboard-pill ${urgencyClass}">${urgencyLevel}</span>
+      `;
+
+      // Profile details
+      document.getElementById("view-rec-name").textContent = rec.name || "--";
+      document.getElementById("view-rec-blood").textContent = rec.blood_group || "--";
+      document.getElementById("view-rec-phone").textContent = rec.phone || "--";
+      document.getElementById("view-rec-location").textContent = rec.location || "--";
+      document.getElementById("view-rec-age-gender").textContent = `${rec.age || '--'} yrs, ${rec.gender || '--'}`;
+      document.getElementById("view-rec-hospital").textContent = hospitalName;
+      document.getElementById("view-rec-units").textContent = `${rec.units_required || '--'} Units`;
+      document.getElementById("view-rec-urgency").innerHTML = `<span class="dashboard-pill ${urgencyClass}">${urgencyLevel}</span>`;
+
+      // Prefill edit form
+      document.getElementById("edit-rec-name").value = rec.name || "";
+      document.getElementById("edit-rec-blood-group").value = rec.blood_group || "";
+      document.getElementById("edit-rec-phone").value = rec.phone || "";
+      document.getElementById("edit-rec-location").value = rec.location || "";
+      document.getElementById("edit-rec-age").value = rec.age || "";
+      document.getElementById("edit-rec-gender").value = rec.gender || "Female";
+      document.getElementById("edit-rec-units").value = rec.units_required || 1;
+      document.getElementById("edit-rec-emergency-level").value = urgencyLevel;
+      if (rec.hospital_id) {
+        document.getElementById("edit-rec-hospital").value = rec.hospital_id;
+      }
+
+      // Prefill emergency creation form defaults
+      document.getElementById("emg-blood-group").value = rec.blood_group || "O+";
+      document.getElementById("emg-units").value = rec.units_required || 2;
+      document.getElementById("emg-urgency").value = urgencyLevel;
+      if (rec.hospital_id) {
+        document.getElementById("emg-hospital").value = rec.hospital_id;
+      }
+    }
+
+    function toggleEditRecipientForm(show) {
+      const container = document.getElementById("recipient-edit-container");
+      const btn = document.getElementById("btn-toggle-edit-rec");
+      if (show === undefined) {
+        show = (container.style.display === "none");
+      }
+      container.style.display = show ? "block" : "none";
+      btn.textContent = show ? "✕ Close Edit" : "✏️ Edit Profile";
+      if (show) {
+        container.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+
+    // Save recipient profile updates
+    async function handleUpdateRecipientProfile(event) {
+      event.preventDefault();
+      const spinner = document.getElementById("edit-rec-spinner");
+      const btn = document.getElementById("btn-save-rec-profile");
+      spinner.style.display = "inline-block";
+      btn.disabled = true;
+
+      const payload = {
+        name: document.getElementById("edit-rec-name").value.trim(),
+        blood_group: document.getElementById("edit-rec-blood-group").value,
+        phone: document.getElementById("edit-rec-phone").value.trim(),
+        location: document.getElementById("edit-rec-location").value.trim(),
+        age: parseInt(document.getElementById("edit-rec-age").value, 10),
+        gender: document.getElementById("edit-rec-gender").value,
+        hospital_id: parseInt(document.getElementById("edit-rec-hospital").value, 10),
+        units_required: parseInt(document.getElementById("edit-rec-units").value, 10),
+        emergency_level: document.getElementById("edit-rec-emergency-level").value
+      };
+
+      try {
+        const res = await fetch("/recipient/me", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to update recipient profile.");
+        }
+
+        Object.assign(currentRecipient, payload);
+        const hosp = hospitalsMap[payload.hospital_id];
+        if (hosp) {
+          currentRecipient.hospital_name = hosp.hospital_name;
+          currentRecipient.hospital_city = hosp.city;
+        }
+
+        renderRecipientProfile(currentRecipient);
+        toggleEditRecipientForm(false);
+        showAlert("Patient profile updated successfully!", "success");
+      } catch (err) {
+        showAlert(err.message, "danger");
+      } finally {
+        spinner.style.display = "none";
+        btn.disabled = false;
+      }
+    }
+
+    // Create recipient profile when unlinked (404)
+    async function handleCreateRecipientProfile(event) {
+      event.preventDefault();
+      const spinner = document.getElementById("create-rec-spinner");
+      const btn = document.getElementById("btn-submit-create-recipient");
+      spinner.style.display = "inline-block";
+      btn.disabled = true;
+
+      const payload = {
+        name: document.getElementById("create-rec-name").value.trim(),
+        blood_group: document.getElementById("create-rec-blood-group").value,
+        phone: document.getElementById("create-rec-phone").value.trim(),
+        location: document.getElementById("create-rec-location").value.trim(),
+        age: parseInt(document.getElementById("create-rec-age").value, 10),
+        gender: document.getElementById("create-rec-gender").value,
+        hospital_id: parseInt(document.getElementById("create-rec-hospital").value, 10),
+        units_required: parseInt(document.getElementById("create-rec-units").value, 10),
+        emergency_level: document.getElementById("create-rec-emergency-level").value
+      };
+
+      try {
+        const res = await fetch("/recipients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to register patient profile.");
+        }
+
+        showAlert("Patient profile successfully registered! You can now broadcast emergency requests.", "success");
+        await loadRecipientProfile();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      } finally {
+        spinner.style.display = "none";
+        btn.disabled = false;
+      }
+    }
+
+    // Post emergency request linked to recipient
+    async function handleCreateEmergencyRequest(event) {
+      event.preventDefault();
+      const spinner = document.getElementById("create-emergency-spinner");
+      const btn = document.getElementById("btn-submit-emergency-request");
+      spinner.style.display = "inline-block";
+      btn.disabled = true;
+
+      const payload = {
+        blood_group_required: document.getElementById("emg-blood-group").value,
+        units_required: parseInt(document.getElementById("emg-units").value, 10),
+        emergency_level: document.getElementById("emg-urgency").value,
+        hospital_id: parseInt(document.getElementById("emg-hospital").value, 10)
+      };
+
+      try {
+        const res = await fetch("/emergency", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to broadcast emergency request.");
+        }
+
+        showAlert(`Emergency blood request #${data.request_id || ''} posted successfully! Voluntary donors will be matched.`, "success");
+        await loadMyEmergencyHistory();
+        await loadIncomingOffers();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      } finally {
+        spinner.style.display = "none";
+        btn.disabled = false;
+      }
+    }
+
+    // Load only this recipient's emergency requests
+    async function loadMyEmergencyHistory() {
+      const tbody = document.getElementById("tbody-my-requests");
+      try {
+        const res = await fetch("/recipient/me/emergency", { credentials: "same-origin" });
+        if (!res.ok) {
+          throw new Error("Failed to load emergency request history.");
+        }
+        myEmergencyRequests = await res.json();
+        renderMyEmergencyRequests(myEmergencyRequests);
+      } catch (err) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--accent-red); padding: 1.5rem;">
+              Could not load emergency request history.
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function renderMyEmergencyRequests(requests) {
+      const tbody = document.getElementById("tbody-my-requests");
+      if (!requests || !requests.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+              You have not posted any emergency blood requests yet.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = requests.map(req => {
+        const hospName = req.hospital_name ? `${req.hospital_name} (${req.hospital_city || ''})` : `Facility #${req.hospital_id || 'N/A'}`;
+        const urgencyClass = `pill-${(req.emergency_level || 'normal').toLowerCase()}`;
+        const statusClass = `pill-status-${(req.request_status || 'active').toLowerCase()}`;
+        const isActive = (req.request_status === "ACTIVE");
+
+        return `
+          <tr>
+            <td><strong>#${req.request_id}</strong></td>
+            <td>
+              <span style="font-weight: 800; color: var(--primary-dark-red); font-size: 1.1rem;">
+                ${req.blood_group_required}
+              </span>
+            </td>
+            <td><strong>${req.units_required}</strong> Units</td>
+            <td>
+              <span class="dashboard-pill ${urgencyClass}">
+                ${req.emergency_level || 'NORMAL'}
+              </span>
+            </td>
+            <td>${hospName}</td>
+            <td style="color: var(--text-muted); font-size: 0.85rem;">
+              ${req.request_date ? formatDate(req.request_date) : 'Recent'}
+            </td>
+            <td>
+              <span class="dashboard-pill ${statusClass}">
+                ${req.request_status || 'ACTIVE'}
+              </span>
+            </td>
+            <td>
+              ${isActive ? `
+                <button type="button" class="btn btn-sm btn-danger-outline" onclick="handleCancelRequest(${req.request_id})">
+                  ✕ Cancel
+                </button>
+              ` : `
+                <span style="color: var(--text-light); font-size: 0.8rem;">--</span>
+              `}
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // Cancel own emergency request
+    async function handleCancelRequest(requestId) {
+      if (!confirm(`Are you sure you want to cancel Emergency Request #${requestId}?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/emergency/${requestId}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ status: "CANCELLED" })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to cancel request.");
+        }
+
+        showAlert(`Emergency request #${requestId} has been cancelled.`, "info");
+        await loadMyEmergencyHistory();
+        await loadIncomingOffers();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      }
+    }
+
+    // Load incoming offers from voluntary donors
+    async function loadIncomingOffers() {
+      const tbody = document.getElementById("tbody-incoming-offers");
+      try {
+        const res = await fetch("/recipient/me/offers", { credentials: "same-origin" });
+        if (!res.ok) {
+          throw new Error("Failed to load incoming donor offers.");
+        }
+        incomingOffers = await res.json();
+        renderIncomingOffers(incomingOffers);
+      } catch (err) {
+        if (tbody) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="9" style="text-align: center; color: var(--accent-red); padding: 1.5rem;">
+                Could not load incoming donor offers.
+              </td>
+            </tr>
+          `;
+        }
+      }
+    }
+
+    function renderIncomingOffers(offers) {
+      const tbody = document.getElementById("tbody-incoming-offers");
+      if (!tbody) return;
+
+      if (!offers || !offers.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+              No voluntary donor offers received yet. When donors offer to help with your emergency requests, they will appear here.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = offers.map(o => {
+        const statusUpper = (o.status || "PENDING").toUpperCase();
+        let statusClass = "pill-normal";
+        let statusLabel = statusUpper;
+        if (statusUpper === "PENDING") {
+          statusClass = "pill-high";
+          statusLabel = "⏳ PENDING";
+        } else if (statusUpper === "ACCEPTED") {
+          statusClass = "pill-low";
+          statusLabel = "✅ ACCEPTED";
+        } else if (statusUpper === "DECLINED") {
+          statusLabel = "❌ DECLINED";
+        } else if (statusUpper === "CANCELLED") {
+          statusLabel = "⚪ CANCELLED";
+        }
+
+        // Contact details privacy display
+        let contactHtml = "";
+        if (statusUpper === "ACCEPTED" && o.donor_phone) {
+          contactHtml = `
+            <a href="tel:${o.donor_phone}" style="font-weight: 700; color: var(--primary-dark-red); text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem;">
+              <span>📞</span> <span>${o.donor_phone}</span>
+            </a>
+          `;
+        } else if (statusUpper === "ACCEPTED") {
+          contactHtml = `<span style="color: var(--text-muted); font-size: 0.8rem;">🔒 Awaiting Donor Contact Consent</span>`;
+        } else {
+          contactHtml = `<span style="color: var(--text-muted); font-size: 0.8rem;">🔒 Protected (Accept offer to view)</span>`;
+        }
+
+        // Actions
+        let actionHtml = "";
+        if (statusUpper === "PENDING") {
+          actionHtml = `
+            <div style="display: flex; gap: 0.4rem;">
+              <button type="button" class="btn btn-primary btn-sm" id="btn-accept-offer-${o.request_id}" onclick="handleRespondToOffer(${o.request_id}, 'ACCEPTED')">
+                ✓ Accept
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-decline-offer-${o.request_id}" onclick="handleRespondToOffer(${o.request_id}, 'DECLINED')">
+                ✕ Decline
+              </button>
+            </div>
+          `;
+        } else if (statusUpper === "ACCEPTED") {
+          actionHtml = `<span class="compatible-tag" style="font-size: 0.8rem;">Accepted Offer</span>`;
+        } else if (statusUpper === "DECLINED") {
+          actionHtml = `<span style="color: var(--text-muted); font-size: 0.8rem;">Offer Declined</span>`;
+        } else {
+          actionHtml = `<span style="color: var(--text-muted); font-size: 0.8rem;">Withdrawn</span>`;
+        }
+
+        const emgLabel = o.emergency_request_id ? `Emergency #${o.emergency_request_id}` : `Request #${o.request_id}`;
+        const notes = o.clinical_notes ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;"><em>Note: ${o.clinical_notes}</em></div>` : '';
+
+        return `
+          <tr>
+            <td><strong>#${o.request_id}</strong></td>
+            <td>
+              <a href="#table-my-requests" style="font-weight: 700; color: var(--primary-dark-red); text-decoration: none;">
+                ${emgLabel}
+              </a>
+            </td>
+            <td>
+              <strong>${o.donor_name || 'Anonymous Donor'}</strong>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">${o.donor_age || '--'} yrs, ${o.donor_gender || '--'}</div>
+              ${notes}
+            </td>
+            <td>
+              <span style="font-weight: 800; color: var(--primary-dark-red); font-size: 1.05rem;">
+                ${o.donor_blood_group || o.blood_group_required || '--'}
+              </span>
+            </td>
+            <td>${o.donor_location || '--'}</td>
+            <td>
+              <span class="dashboard-pill ${statusClass}">${statusLabel}</span>
+            </td>
+            <td>${contactHtml}</td>
+            <td style="color: var(--text-muted); font-size: 0.85rem;">
+              ${o.created_at ? formatDate(o.created_at) : 'Recent'}
+            </td>
+            <td>${actionHtml}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    async function handleRespondToOffer(offerId, newStatus) {
+      const verb = (newStatus === "ACCEPTED") ? "accept" : "decline";
+      const confirmationMsg = (newStatus === "ACCEPTED")
+        ? `Accept this donation offer? Once accepted, the donor's verified telephone number will be unlocked for direct coordination.`
+        : `Decline this donation offer?`;
+
+      if (!confirm(confirmationMsg)) return;
+
+      try {
+        const res = await fetch(`/donation-requests/${offerId}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ status: newStatus })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || `Failed to ${verb} offer.`);
+        }
+
+        showAlert(`Donation offer #${offerId} has been successfully ${newStatus.toLowerCase()}!`, "success");
+        await loadIncomingOffers();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      }
+    }
+
+    // Search compatible donors
+    function handleSearchDonors(event) {
+      event.preventDefault();
+      const blood = document.getElementById("search-blood-group").value;
+      const loc = document.getElementById("search-location").value.trim();
+      executeDonorSearch(blood, loc);
+    }
+
+    async function executeDonorSearch(bloodGroup, location) {
+      const loader = document.getElementById("search-loading");
+      const wrapper = document.getElementById("search-results-wrapper");
+      const tbody = document.getElementById("tbody-search-results");
+
+      loader.style.display = "block";
+      wrapper.style.display = "none";
+
+      try {
+        const query = new URLSearchParams({ blood_group: bloodGroup });
+        if (location) query.append("location", location);
+
+        const res = await fetch(`/find-donors?${query.toString()}`, { credentials: "same-origin" });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to search donors.");
+        }
+
+        const data = await res.json();
+        const donors = data.donors || [];
+
+        loader.style.display = "none";
+        wrapper.style.display = "block";
+
+        if (!donors.length) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                No available compatible donors found for blood group ${bloodGroup} in the specified location.
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        tbody.innerHTML = donors.map((d, index) => {
+          return `
+            <tr>
+              <td><strong>#${index + 1}</strong></td>
+              <td><strong>${escapeHtml(d.name || 'Anonymous Donor')}</strong></td>
+              <td>
+                <span style="font-weight: 800; color: var(--primary-dark-red);">
+                  ${escapeHtml(d.blood_group || '--')}
+                </span>
+              </td>
+              <td>${escapeHtml(d.location || '--')}</td>
+              <td>${escapeHtml(String(d.age || '--'))} yrs, ${escapeHtml(d.gender || '--')}</td>
+              <td>
+                <span class="dashboard-pill pill-available">● AVAILABLE</span>
+              </td>
+              <td>
+                <span style="font-weight: 700; color: var(--primary-dark-red);">
+                  ${d.matching_score !== undefined ? d.matching_score + ' pts' : '--'}
+                </span>
+              </td>
+              <td>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">
+                  🔒 Protected (Consent workflow)
+                </span>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+      } catch (err) {
+        loader.style.display = "none";
+        showAlert(err.message, "danger");
+      }
+    }
+
+    function formatDate(raw) {
+      if (!raw) return "--";
+      try {
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return raw;
+        return d.toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" });
+      } catch {
+        return raw;
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // =========================================
+    // RECIPIENT CAMPAIGN FUNCTIONS
+    // =========================================
+    let recipientCampaigns = [];
+    let recipientCampaignFilter = 'ALL';
+    let recipientCampaignSearch = '';
+
+    async function loadRecipientCampaigns() {
+      const container = document.getElementById("recipient-campaigns-container");
+      if (!container) return;
+      try {
+        const res = await fetch("/campaigns?status=ALL", { credentials: "same-origin" });
+        if (res.ok) {
+          recipientCampaigns = await res.json();
+          renderRecipientCampaigns();
+        } else {
+          container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 2rem;">Unable to load campaigns.</div>`;
+        }
+      } catch (e) {
+        console.warn("Could not load recipient campaigns:", e);
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 2rem;">Unable to load campaigns.</div>`;
+      }
+    }
+
+    function setRecipientCampaignFilter(filter) {
+      recipientCampaignFilter = filter;
+      document.querySelectorAll("#recipient-campaign-filter-tabs .campaign-filter-btn").forEach(btn => {
+        if (btn.getAttribute("data-filter") === filter) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+      renderRecipientCampaigns();
+    }
+
+    function handleRecipientCampaignSearch() {
+      recipientCampaignSearch = (document.getElementById("recipient-campaign-search").value || "").trim().toLowerCase();
+      renderRecipientCampaigns();
+    }
+
+    function renderRecipientCampaigns() {
+      const container = document.getElementById("recipient-campaigns-container");
+      if (!container) return;
+
+      const filtered = recipientCampaigns.filter(c => {
+        const eff = (c.display_status || c.status || "").toUpperCase();
+        if (recipientCampaignFilter !== 'ALL') {
+          if (recipientCampaignFilter === 'UPCOMING' && eff !== 'UPCOMING' && eff !== 'PLANNED') return false;
+          if (recipientCampaignFilter === 'ONGOING' && eff !== 'ONGOING') return false;
+          if (recipientCampaignFilter === 'COMPLETED' && eff !== 'COMPLETED') return false;
+          if (recipientCampaignFilter === 'CANCELLED' && eff !== 'CANCELLED') return false;
+        }
+        if (recipientCampaignSearch) {
+          const name = (c.campaign_name || "").toLowerCase();
+          const loc = (c.location || "").toLowerCase();
+          const desc = (c.description || "").toLowerCase();
+          if (!name.includes(recipientCampaignSearch) && !loc.includes(recipientCampaignSearch) && !desc.includes(recipientCampaignSearch)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 2.5rem; background: var(--bg-subtle); border-radius: var(--radius-md);">
+            No donation campaigns currently match the selected criteria.
+          </div>
+        `;
+        return;
+      }
+
+      function getBadge(status, displayStatus) {
+        const eff = (displayStatus || status || "UPCOMING").toUpperCase();
+        if (eff === "ONGOING") return '<span class="dashboard-pill pill-status-ongoing">🟢 Ongoing</span>';
+        if (eff === "UPCOMING" || eff === "PLANNED") return '<span class="dashboard-pill pill-status-upcoming">🗓️ Upcoming</span>';
+        if (eff === "COMPLETED") return '<span class="dashboard-pill pill-status-completed">✅ Completed</span>';
+        if (eff === "CANCELLED") return '<span class="dashboard-pill pill-status-cancelled">🚫 Cancelled</span>';
+        return `<span class="dashboard-pill pill-status-upcoming">${eff}</span>`;
+      }
+
+      function formatDt(dtStr) {
+        if (!dtStr) return "N/A";
+        try {
+          const d = new Date(dtStr);
+          if (isNaN(d.getTime())) return dtStr;
+          return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+        } catch (e) {
+          return dtStr;
+        }
+      }
+
+      container.innerHTML = `
+        <div class="campaign-grid">
+          ${filtered.map(c => `
+            <div class="campaign-card">
+              <div>
+                <div class="campaign-card-header">
+                  <h3 class="campaign-card-title">${escapeHtml(c.campaign_name)}</h3>
+                  ${getBadge(c.status, c.display_status)}
+                </div>
+                ${c.description ? `<p class="campaign-card-desc">${escapeHtml(c.description)}</p>` : '<p class="campaign-card-desc" style="font-style: italic; color: var(--text-light);">No additional description provided.</p>'}
+              </div>
+              <div class="campaign-card-meta">
+                <div class="campaign-meta-item">
+                  <span>📍</span>
+                  <span><strong>Venue:</strong> ${escapeHtml(c.location)}</span>
+                </div>
+                <div class="campaign-meta-item">
+                  <span>📅</span>
+                  <span><strong>Starts:</strong> ${formatDt(c.start_date_iso || c.start_date)}</span>
+                </div>
+                <div class="campaign-meta-item">
+                  <span>⏰</span>
+                  <span><strong>Ends:</strong> ${formatDt(c.end_date_iso || c.end_date)}</span>
+                </div>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    // Auto-initialize on DOM ready
+    document.addEventListener("DOMContentLoaded", () => {
+      loadRecipientProfile();
+    });
+  </script>
+</body>
+</html>

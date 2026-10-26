@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sign in to BloodLink — Access your donor or recipient portal.">
+  <title>Sign In — BloodLink</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="brand-logo">
+        <span class="brand-icon">🩸</span>
+        <div class="brand-title">
+          <span class="brand-name">BloodLink</span>
+          <span class="brand-subtitle">Blood Donation & Emergency Finder</span>
+        </div>
+      </a>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="/">Home</a></li>
+          <li><a href="/signup" class="nav-auth-btn">✨ Sign Up</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Auth Container -->
+  <main class="auth-page-container">
+    <div class="auth-card">
+      <div class="auth-card-header">
+        <span class="auth-badge-icon">🔐</span>
+        <h1 class="auth-card-title">Sign In to BloodLink</h1>
+        <p class="auth-card-subtitle">
+          Access your personal portal to manage donation availability or track emergency blood transfusion requests.
+        </p>
+      </div>
+
+      <!-- Flash Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="registration-alert {% if category == 'success' %}alert-success{% else %}alert-error{% endif %}" role="alert" style="margin-bottom: 1.5rem;">
+              <div class="alert-icon">{% if category == 'success' %}✅{% else %}ℹ️{% endif %}</div>
+              <div class="alert-content">
+                <h4>Notice</h4>
+                <p>{{ message }}</p>
+              </div>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <!-- Error Alert Container -->
+      {% if error %}
+      <div class="registration-alert alert-error" role="alert" style="margin-bottom: 1.5rem;">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-content">
+          <h4>Sign In Failed</h4>
+          <p id="login-error-message">{{ error }}</p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Login Form -->
+      <form action="/login" method="POST" class="auth-form" novalidate id="login-form">
+        <!-- Email Address -->
+        <div class="form-group">
+          <label for="email" class="form-label">Email Address <span class="required-star">*</span></label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            class="form-control"
+            placeholder="e.g., user@example.com"
+            value="{{ email|default('') }}"
+            required
+            autocomplete="email"
+          >
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password" class="form-label">Password <span class="required-star">*</span></label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            class="form-control"
+            placeholder="Enter your password"
+            required
+            autocomplete="current-password"
+          >
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary auth-btn-submit" id="btn-submit-login">
+          🔐 Sign In
+        </button>
+      </form>
+
+      <!-- Footer Links -->
+      <div class="auth-footer">
+        Don't have an account yet? <a href="/signup">Create one here</a>
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>

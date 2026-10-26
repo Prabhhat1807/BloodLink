@@ -1,0 +1,48 @@
+# =============================================================================
+# BloodLink — Git Ignore Rules
+# =============================================================================
+
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Backup directories, database dumps, and scratch files
+backups/
+scratch/
+*.sql
+!schema.sql
+*.dump
+*.bak
+*.swp
+*.tmp
+
+# IDE, editor configuration, and workspace files
+.vscode/
+.idea/
+*.code-workspace
+
+# Application and server logs
+*.log
+
+# Operating system artifacts
+Thumbs.db
+Desktop.ini
+.DS_Store
+

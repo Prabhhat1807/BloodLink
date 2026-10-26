@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Donor Portal — BloodLink</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="brand-logo" id="brand-logo-link">
+        <span class="brand-icon">🩸</span>
+        <div class="brand-title">
+          <span class="brand-name">BloodLink</span>
+          <span class="brand-subtitle">Donor Portal</span>
+        </div>
+      </a>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="/" id="nav-link-home">Home</a></li>
+          <li>
+            <span class="dashboard-role-tag role-tag-donor" style="margin-bottom:0;">
+              🩸 {{ user_role }}
+            </span>
+          </li>
+          <li><a href="/logout" class="nav-auth-link" id="nav-link-logout">🚪 Logout</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="dashboard-container">
+
+    <!-- Global Alert Box -->
+    <div id="dashboard-alert" class="dashboard-alert" style="display: none;">
+      <span id="dashboard-alert-msg"></span>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="hideAlert()" style="padding: 0.2rem 0.5rem !important;">✕</button>
+    </div>
+
+    <!-- Hero Header Card -->
+    <div class="dashboard-hero" id="dashboard-hero">
+      <div class="dashboard-hero-content">
+        <span class="dashboard-role-tag role-tag-donor">🩸 Voluntary Blood Donor</span>
+        <h1 class="dashboard-hero-title">Welcome, {{ user_name }}!</h1>
+        <p class="dashboard-hero-subtitle">
+          Manage your voluntary donor profile, toggle your real-time donation availability, and track incoming emergency blood requests.
+        </p>
+      </div>
+      <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-refresh-dashboard" onclick="loadDonorProfile()">
+          🔄 Refresh
+        </button>
+        <a href="/logout" class="btn btn-primary btn-sm" id="btn-hero-signout">
+          🚪 Sign Out
+        </a>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="donor-loading-section" style="text-align: center; padding: 3rem 0;">
+      <div class="spinner"></div>
+      <p style="color: var(--text-muted); font-weight: 600;">Loading your voluntary donor profile...</p>
+    </div>
+
+    <!-- UNLINKED PROFILE STATE (404) -->
+    <div id="donor-unlinked-section" style="display: none;">
+      <div class="dashboard-section-card">
+        <div class="dashboard-section-header">
+          <div>
+            <h2 class="dashboard-section-title">
+              <span>⚠️</span> Complete Your Voluntary Donor Profile
+            </h2>
+            <p class="dashboard-section-desc">
+              Your account is authenticated, but not yet linked to a voluntary donor medical profile in the database. Complete the enrollment form below to activate your donor status.
+            </p>
+          </div>
+        </div>
+
+        <form id="create-donor-form" onsubmit="handleCreateDonorProfile(event)">
+          <div class="form-grid-2" style="margin-bottom: 1.25rem;">
+            <div class="form-group">
+              <label class="form-label" for="create-name">Full Legal Name <span class="required-star">*</span></label>
+              <input type="text" id="create-name" name="name" class="form-control" value="{{ user_name }}" required placeholder="e.g. Aarav Patel">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="create-blood-group">Blood Group <span class="required-star">*</span></label>
+              <select id="create-blood-group" name="blood_group" class="form-control" required>
+                <option value="" disabled selected>Select Blood Group</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O- (Universal Donor)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-3" style="margin-bottom: 1.25rem;">
+            <div class="form-group">
+              <label class="form-label" for="create-phone">Contact Phone (10 digits) <span class="required-star">*</span></label>
+              <input type="tel" id="create-phone" name="phone" class="form-control" required pattern="[0-9]{10}" placeholder="9876543210" maxlength="10">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="create-location">City / Location <span class="required-star">*</span></label>
+              <input type="text" id="create-location" name="location" class="form-control" required placeholder="e.g. Mumbai">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="create-age">Age (18-65) <span class="required-star">*</span></label>
+              <input type="number" id="create-age" name="age" class="form-control" required min="18" max="65" placeholder="25">
+            </div>
+          </div>
+
+          <div class="form-grid-3" style="margin-bottom: 1.5rem;">
+            <div class="form-group">
+              <label class="form-label" for="create-gender">Gender <span class="required-star">*</span></label>
+              <select id="create-gender" name="gender" class="form-control" required>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="create-weight">Weight (kg, min 50kg) <span class="required-star">*</span></label>
+              <input type="number" id="create-weight" name="weight" class="form-control" required min="50" max="200" placeholder="65">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="create-last-donation">Last Donation Date <span class="optional-tag">(Optional)</span></label>
+              <input type="date" id="create-last-donation" name="last_donation_date" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.75rem;">
+            <label class="form-label" for="create-medical-status">Medical Health Status</label>
+            <input type="text" id="create-medical-status" name="medical_status" class="form-control" value="Eligible to donate" placeholder="e.g. Fit and eligible">
+          </div>
+
+          <div style="display: flex; gap: 1rem; align-items: center;">
+            <button type="submit" class="btn btn-primary" id="btn-submit-create-donor">
+              💾 Create Donor Profile
+            </button>
+            <span id="create-donor-spinner" class="spinner" style="display: none; width: 24px; height: 24px; margin: 0;"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ACTIVE PROFILE STATE (200) -->
+    <div id="donor-active-section" style="display: none;">
+
+      <!-- Quick Metrics Row -->
+      <div class="dashboard-quick-stats">
+        <!-- Availability Card -->
+        <div class="dashboard-stat-card" id="card-donor-availability">
+          <div>
+            <div class="dashboard-stat-label">Donation Availability</div>
+            <div class="dashboard-stat-value" id="display-stat-availability">
+              <span class="dashboard-pill pill-available">● AVAILABLE</span>
+            </div>
+            <div class="dashboard-stat-footer" id="availability-footer-text">
+              You are currently visible to emergency clinical searches.
+            </div>
+          </div>
+          <div style="margin-top: 1.25rem;">
+            <button type="button" class="btn-toggle-availability btn-toggle-available" id="btn-toggle-availability" onclick="handleToggleAvailability()">
+              <span>🔄</span> <span id="toggle-availability-label">Switch to Resting</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Blood Group Card -->
+        <div class="dashboard-stat-card">
+          <div>
+            <div class="dashboard-stat-label">Blood Group</div>
+            <div class="dashboard-stat-value">
+              <span style="color: var(--primary-dark-red); font-size: 2.2rem;" id="display-stat-blood">--</span>
+            </div>
+            <div class="dashboard-stat-footer" id="display-stat-compatibility-info">
+              Compatible recipient types will be shown below.
+            </div>
+          </div>
+          <div style="margin-top: 1.25rem;">
+            <span class="compatible-tag" id="display-donor-badge-type">Verified Donor</span>
+          </div>
+        </div>
+
+        <!-- Medical Readiness Card -->
+        <div class="dashboard-stat-card">
+          <div>
+            <div class="dashboard-stat-label">Donation Readiness</div>
+            <div class="dashboard-stat-value" style="font-size: 1.25rem;" id="display-stat-medical">
+              Fit to Donate
+            </div>
+            <div class="dashboard-stat-footer" id="display-stat-last-donation-summary">
+              Last Donation: None recorded
+            </div>
+          </div>
+          <div style="margin-top: 1.25rem;">
+            <span style="font-size: 0.85rem; color: var(--text-light);" id="display-stat-weight-summary">Weight: -- kg</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Overview Card -->
+      <div class="dashboard-section-card" id="donor-profile-card">
+        <div class="dashboard-section-header">
+          <div>
+            <h2 class="dashboard-section-title">
+              <span>👤</span> Voluntary Donor Profile Details
+            </h2>
+            <p class="dashboard-section-desc">
+              Your registered donor medical records. Contact details are kept private and never shared publicly without consent.
+            </p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-edit-profile" onclick="toggleEditProfileForm()">
+              ✏️ Edit Profile
+            </button>
+          </div>
+        </div>
+
+        <!-- Read-Only Profile View -->
+        <div id="donor-profile-view" class="dashboard-data-grid">
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Donor Name</div>
+            <div class="dashboard-cell-value" id="view-donor-name">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Blood Group</div>
+            <div class="dashboard-cell-value" id="view-donor-blood">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Contact Phone (Private)</div>
+            <div class="dashboard-cell-value" id="view-donor-phone">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">City / Location</div>
+            <div class="dashboard-cell-value" id="view-donor-location">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Age & Gender</div>
+            <div class="dashboard-cell-value" id="view-donor-age-gender">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Weight (kg)</div>
+            <div class="dashboard-cell-value" id="view-donor-weight">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Last Donation Date</div>
+            <div class="dashboard-cell-value" id="view-donor-last-date">--</div>
+          </div>
+          <div class="dashboard-data-cell">
+            <div class="dashboard-cell-label">Medical Status</div>
+            <div class="dashboard-cell-value" id="view-donor-medical">--</div>
+          </div>
+        </div>
+
+        <!-- Inline Edit Form (Hidden by default) -->
+        <div id="donor-edit-container" style="display: none; margin-top: 1.75rem; border-top: 1.5px solid var(--border-subtle); padding-top: 1.5rem;">
+          <h3 style="font-size: 1.1rem; color: var(--primary-dark-red); margin-bottom: 1.25rem;">
+            ✏️ Edit Your Permitted Profile Fields
+          </h3>
+          <form id="edit-donor-form" onsubmit="handleUpdateDonorProfile(event)">
+            <div class="form-grid-2" style="margin-bottom: 1.25rem;">
+              <div class="form-group">
+                <label class="form-label" for="edit-name">Full Name <span class="required-star">*</span></label>
+                <input type="text" id="edit-name" name="name" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-blood-group">Blood Group <span class="required-star">*</span></label>
+                <select id="edit-blood-group" name="blood_group" class="form-control" required>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-grid-3" style="margin-bottom: 1.25rem;">
+              <div class="form-group">
+                <label class="form-label" for="edit-phone">Phone Number <span class="required-star">*</span></label>
+                <input type="tel" id="edit-phone" name="phone" class="form-control" required pattern="[0-9]{10}" maxlength="10">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-location">City / Location <span class="required-star">*</span></label>
+                <input type="text" id="edit-location" name="location" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-age">Age (18-65) <span class="required-star">*</span></label>
+                <input type="number" id="edit-age" name="age" class="form-control" required min="18" max="65">
+              </div>
+            </div>
+
+            <div class="form-grid-3" style="margin-bottom: 1.5rem;">
+              <div class="form-group">
+                <label class="form-label" for="edit-gender">Gender <span class="required-star">*</span></label>
+                <select id="edit-gender" name="gender" class="form-control" required>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-weight">Weight (kg) <span class="required-star">*</span></label>
+                <input type="number" id="edit-weight" name="weight" class="form-control" required min="50" max="200">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="edit-last-donation">Last Donation Date</label>
+                <input type="date" id="edit-last-donation" name="last_donation_date" class="form-control">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+              <label class="form-label" for="edit-medical-status">Medical Health Status</label>
+              <input type="text" id="edit-medical-status" name="medical_status" class="form-control">
+            </div>
+
+            <div style="display: flex; gap: 1rem; align-items: center;">
+              <button type="submit" class="btn btn-primary" id="btn-save-donor-profile">
+                💾 Save Changes
+              </button>
+              <button type="button" class="btn btn-secondary" onclick="toggleEditProfileForm(false)">
+                Cancel
+              </button>
+              <span id="edit-donor-spinner" class="spinner" style="display: none; width: 24px; height: 24px; margin: 0;"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Urgent Emergency Requests Section -->
+      <div class="dashboard-section-card" id="donor-emergency-feed-card">
+        <div class="dashboard-section-header">
+          <div>
+            <h2 class="dashboard-section-title">
+              <span>🚨</span> Urgent Emergency Blood Requests Feed
+            </h2>
+            <p class="dashboard-section-desc">
+              Active blood requests from verified clinical facilities. Recipient contact details remain protected and are coordinated through verified hospital channels.
+            </p>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <label for="filter-compatible-only" style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 0.35rem;">
+              <input type="checkbox" id="filter-compatible-only" onchange="renderEmergencyFeed()">
+              Only show requests matching my blood group
+            </label>
+          </div>
+        </div>
+
+        <!-- Privacy Assurance Notice -->
+        <div class="contact-protected-box" style="margin-bottom: 1.5rem;">
+          <span>🔒</span>
+          <span><strong>Privacy Protected:</strong> Patient names and contact numbers are safely withheld to prevent unsolicited contacts. Mutual consent protocols apply.</span>
+        </div>
+
+        <!-- Table Container -->
+        <div class="dashboard-table-wrapper">
+          <table class="dashboard-table" id="table-emergency-feed">
+            <thead>
+              <tr>
+                <th>Request ID</th>
+                <th>Blood Required</th>
+                <th>Units</th>
+                <th>Urgency Level</th>
+                <th>Hospital & Location</th>
+                <th>Request Date</th>
+                <th>Match Status</th>
+                <th>Action / Offer</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-emergency-feed">
+              <tr>
+                <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                  Loading active emergency requests...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- My Submitted Donation Offers Section -->
+      <div class="dashboard-section-card" id="donor-my-offers-card">
+        <div class="dashboard-section-header">
+          <div>
+            <h2 class="dashboard-section-title">
+              <span>🤝</span> My Submitted Donation Offers
+            </h2>
+            <p class="dashboard-section-desc">
+              Track the status of your offers to help with emergency requests. When a recipient accepts your offer, direct clinical coordination begins.
+            </p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="loadDonorOffers()">
+              🔄 Refresh Offers
+            </button>
+          </div>
+        </div>
+
+        <div class="dashboard-table-wrapper">
+          <table class="dashboard-table" id="table-my-offers">
+            <thead>
+              <tr>
+                <th>Offer ID</th>
+                <th>Emergency Req</th>
+                <th>Blood Required</th>
+                <th>Units</th>
+                <th>Hospital Facility</th>
+                <th>Offer Status</th>
+                <th>Consent Given</th>
+                <th>Date Offered</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-my-offers">
+              <tr>
+                <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                  Loading your donation offers...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Blood Donation Campaigns Section -->
+      <div class="dashboard-section-card" id="donor-campaigns-card">
+        <div class="dashboard-section-header" style="flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h2 class="dashboard-section-title">
+              <span>🏕️</span> Blood Donation Campaigns & Community Drives
+            </h2>
+            <p class="dashboard-section-desc">
+              Discover upcoming and ongoing voluntary blood donation camps, mobile blood vans, and community collection drives.
+            </p>
+          </div>
+          <div class="campaign-filter-tabs" id="donor-campaign-filter-tabs">
+            <button type="button" class="campaign-filter-btn active" data-filter="ALL" onclick="setDonorCampaignFilter('ALL')">All</button>
+            <button type="button" class="campaign-filter-btn" data-filter="UPCOMING" onclick="setDonorCampaignFilter('UPCOMING')">🗓️ Upcoming</button>
+            <button type="button" class="campaign-filter-btn" data-filter="ONGOING" onclick="setDonorCampaignFilter('ONGOING')">🟢 Ongoing</button>
+            <button type="button" class="campaign-filter-btn" data-filter="COMPLETED" onclick="setDonorCampaignFilter('COMPLETED')">✅ Completed</button>
+            <button type="button" class="campaign-filter-btn" data-filter="CANCELLED" onclick="setDonorCampaignFilter('CANCELLED')">🚫 Cancelled</button>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div style="margin-bottom: 1rem;">
+          <input type="text" id="donor-campaign-search" class="form-control" placeholder="🔍 Search campaigns by title or location..." oninput="handleDonorCampaignSearch()">
+        </div>
+
+        <!-- Campaign Cards Container -->
+        <div id="donor-campaigns-container">
+          <div style="text-align: center; color: var(--text-muted); padding: 2rem;">
+            <div class="spinner" style="margin: 0 auto 0.75rem auto;"></div>
+            Loading blood donation campaigns...
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal for Donation Offer Confirmation -->
+    <div id="modal-offer-confirm" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+      <div class="dashboard-section-card" style="max-width: 520px; width: 90%; margin: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.25);">
+        <div class="dashboard-section-header" style="margin-bottom: 1rem;">
+          <div>
+            <h3 class="dashboard-section-title" style="font-size: 1.25rem;">
+              <span>🤝</span> Confirm Voluntary Donation Offer
+            </h3>
+            <p class="dashboard-section-desc" style="font-size: 0.85rem;">
+              You are offering to donate blood for an urgent clinical emergency request.
+            </p>
+          </div>
+        </div>
+
+        <!-- Inline error alert inside the modal -->
+        <div id="modal-offer-error" style="display: none; margin-bottom: 1.25rem; padding: 0.75rem 1rem; border-radius: 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #b91c1c; font-size: 0.85rem; line-height: 1.4;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span>⚠️</span>
+            <span id="modal-offer-error-msg"></span>
+          </div>
+        </div>
+
+        <form id="form-offer-modal" onsubmit="submitDonationOffer(event)">
+          <div id="modal-offer-details" style="background: var(--bg-light, #f8fafc); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; font-size: 0.9rem;">
+            <!-- Filled dynamically -->
+          </div>
+
+          <div style="margin-bottom: 1.25rem;">
+            <label for="modal-offer-notes" style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; color: var(--text-muted);">
+              Optional Clinical / Availability Note:
+            </label>
+            <input type="text" id="modal-offer-notes" class="form-control" placeholder="e.g. Can reach the hospital within 1 hour" maxlength="255">
+          </div>
+
+          <div class="contact-protected-box" style="margin-bottom: 1.25rem; padding: 0.75rem;">
+            <label style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; color: var(--text-color, #1e293b);">
+              <input type="checkbox" id="modal-offer-consent" checked style="margin-top: 3px;">
+              <span>
+                <strong>Explicit Contact Consent:</strong> I agree to disclose my verified telephone number to the recipient once this offer is accepted.
+              </span>
+            </label>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+            <button type="button" class="btn btn-secondary" onclick="closeOfferModal()">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary" id="btn-submit-offer">
+              🚀 Confirm & Send Offer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Vanilla JavaScript Logic -->
+  <script>
+    // State management
+    let currentDonor = null;
+    let hospitalsMap = {};
+    let activeEmergencyRequests = [];
+    let myOffers = [];
+    let myOffersByEmergencyId = {};
+    let selectedEmergencyForOffer = null;
+
+    // Blood compatibility rules
+    const DONOR_COMPATIBILITY = {
+      "O-": ["O-", "O+", "A-", "A+", "B-", "B+", "AB-", "AB+"],
+      "O+": ["O+", "A+", "B+", "AB+"],
+      "A-": ["A-", "A+", "AB-", "AB+"],
+      "A+": ["A+", "AB+"],
+      "B-": ["B-", "B+", "AB-", "AB+"],
+      "B+": ["B+", "AB+"],
+      "AB-": ["AB-", "AB+"],
+      "AB+": ["AB+"]
+    };
+
+    function showAlert(message, type = "success") {
+      const alertBox = document.getElementById("dashboard-alert");
+      const msgSpan = document.getElementById("dashboard-alert-msg");
+      alertBox.className = `dashboard-alert alert-${type}`;
+      msgSpan.textContent = message;
+      alertBox.style.display = "flex";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function hideAlert() {
+      const alertBox = document.getElementById("dashboard-alert");
+      alertBox.style.display = "none";
+    }
+
+    // Load hospital details for hospital_id resolution
+    async function loadHospitals() {
+      try {
+        const res = await fetch("/hospitals", { credentials: "same-origin" });
+        if (res.ok) {
+          const list = await res.json();
+          hospitalsMap = {};
+          list.forEach(h => {
+            hospitalsMap[h.hospital_id] = h;
+          });
+        }
+      } catch (err) {
+        console.warn("Could not fetch hospitals:", err);
+      }
+    }
+
+    // Fetch authenticated donor's profile
+    async function loadDonorProfile() {
+      hideAlert();
+      document.getElementById("donor-loading-section").style.display = "block";
+      document.getElementById("donor-unlinked-section").style.display = "none";
+      document.getElementById("donor-active-section").style.display = "none";
+
+      try {
+        await loadHospitals();
+        const res = await fetch("/donor/me", { credentials: "same-origin" });
+
+        if (res.status === 404) {
+          // Account has no linked donor profile
+          document.getElementById("donor-loading-section").style.display = "none";
+          document.getElementById("donor-unlinked-section").style.display = "block";
+          return;
+        }
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || errData.message || "Failed to load donor profile.");
+        }
+
+        currentDonor = await res.json();
+        renderDonorProfile(currentDonor);
+        document.getElementById("donor-loading-section").style.display = "none";
+        document.getElementById("donor-active-section").style.display = "block";
+
+        // Load emergency requests feed, offers, and campaigns
+        await loadEmergencyFeed();
+        await loadDonorOffers();
+        await loadDonorCampaigns();
+
+      } catch (err) {
+        document.getElementById("donor-loading-section").style.display = "none";
+        showAlert(err.message || "An unexpected error occurred while loading profile.", "danger");
+      }
+    }
+
+    function renderDonorProfile(donor) {
+      // Metric cards
+      const availStat = document.getElementById("display-stat-availability");
+      const availBtn = document.getElementById("btn-toggle-availability");
+      const toggleLabel = document.getElementById("toggle-availability-label");
+      const availFooter = document.getElementById("availability-footer-text");
+
+      const isAvailable = (donor.availability === 1 || donor.availability === true || donor.availability === "1");
+
+      if (isAvailable) {
+        availStat.innerHTML = '<span class="dashboard-pill pill-available">● AVAILABLE TO DONATE</span>';
+        availBtn.className = "btn-toggle-availability btn-toggle-resting";
+        toggleLabel.textContent = "Switch to Resting";
+        availFooter.textContent = "You are currently visible to clinical recipient searches.";
+      } else {
+        availStat.innerHTML = '<span class="dashboard-pill pill-resting">○ RESTING / INACTIVE</span>';
+        availBtn.className = "btn-toggle-availability btn-toggle-available";
+        toggleLabel.textContent = "Switch to Available";
+        availFooter.textContent = "You are marked as resting and won't receive emergency matches.";
+      }
+
+      document.getElementById("display-stat-blood").textContent = donor.blood_group || "--";
+      const compatibleList = DONOR_COMPATIBILITY[donor.blood_group] || [];
+      document.getElementById("display-stat-compatibility-info").textContent = 
+        compatibleList.length ? `Can donate to: ${compatibleList.join(", ")}` : "Verified medical profile";
+
+      document.getElementById("display-stat-medical").textContent = donor.medical_status || "Fit to Donate";
+      document.getElementById("display-stat-last-donation-summary").textContent = 
+        donor.last_donation_date ? `Last Donation: ${formatDate(donor.last_donation_date)}` : "Last Donation: None recorded";
+      document.getElementById("display-stat-weight-summary").textContent = `Weight: ${donor.weight ? donor.weight + ' kg' : '--'}`;
+
+      // Profile details
+      document.getElementById("view-donor-name").textContent = donor.name || "--";
+      document.getElementById("view-donor-blood").textContent = donor.blood_group || "--";
+      document.getElementById("view-donor-phone").textContent = donor.phone || "--";
+      document.getElementById("view-donor-location").textContent = donor.location || "--";
+      document.getElementById("view-donor-age-gender").textContent = `${donor.age || '--'} yrs, ${donor.gender || '--'}`;
+      document.getElementById("view-donor-weight").textContent = donor.weight ? `${donor.weight} kg` : "--";
+      document.getElementById("view-donor-last-date").textContent = donor.last_donation_date ? formatDate(donor.last_donation_date) : "None recorded";
+      document.getElementById("view-donor-medical").textContent = donor.medical_status || "Eligible";
+
+      // Prefill edit form
+      document.getElementById("edit-name").value = donor.name || "";
+      document.getElementById("edit-blood-group").value = donor.blood_group || "";
+      document.getElementById("edit-phone").value = donor.phone || "";
+      document.getElementById("edit-location").value = donor.location || "";
+      document.getElementById("edit-age").value = donor.age || "";
+      document.getElementById("edit-gender").value = donor.gender || "Male";
+      document.getElementById("edit-weight").value = donor.weight || "";
+      if (donor.last_donation_date) {
+        document.getElementById("edit-last-donation").value = toDateInputValue(donor.last_donation_date);
+      } else {
+        document.getElementById("edit-last-donation").value = "";
+      }
+      document.getElementById("edit-medical-status").value = donor.medical_status || "";
+    }
+
+    function toggleEditProfileForm(show) {
+      const container = document.getElementById("donor-edit-container");
+      const btn = document.getElementById("btn-toggle-edit-profile");
+      if (show === undefined) {
+        show = (container.style.display === "none");
+      }
+      container.style.display = show ? "block" : "none";
+      btn.textContent = show ? "✕ Close Edit" : "✏️ Edit Profile";
+      if (show) {
+        container.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+
+    // Toggle availability
+    async function handleToggleAvailability() {
+      if (!currentDonor) return;
+      const isCurrentlyAvailable = (currentDonor.availability === 1 || currentDonor.availability === true || currentDonor.availability === "1");
+      const newAvailability = isCurrentlyAvailable ? 0 : 1;
+
+      try {
+        const res = await fetch("/donor/me/availability", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ availability: newAvailability })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to update availability.");
+        }
+
+        currentDonor.availability = newAvailability;
+        renderDonorProfile(currentDonor);
+        renderEmergencyFeed();
+        showAlert(`Donation status updated to ${newAvailability === 1 ? 'AVAILABLE' : 'RESTING'}.`, "success");
+      } catch (err) {
+        showAlert(err.message, "danger");
+      }
+    }
+
+    // Save profile edits
+    async function handleUpdateDonorProfile(event) {
+      event.preventDefault();
+      const spinner = document.getElementById("edit-donor-spinner");
+      const btn = document.getElementById("btn-save-donor-profile");
+      spinner.style.display = "inline-block";
+      btn.disabled = true;
+
+      const payload = {
+        name: document.getElementById("edit-name").value.trim(),
+        blood_group: document.getElementById("edit-blood-group").value,
+        phone: document.getElementById("edit-phone").value.trim(),
+        location: document.getElementById("edit-location").value.trim(),
+        age: parseInt(document.getElementById("edit-age").value, 10),
+        gender: document.getElementById("edit-gender").value,
+        weight: parseFloat(document.getElementById("edit-weight").value),
+        last_donation_date: document.getElementById("edit-last-donation").value || null,
+        medical_status: document.getElementById("edit-medical-status").value.trim() || "Eligible"
+      };
+
+      try {
+        const res = await fetch("/donor/me", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to update donor profile.");
+        }
+
+        // Merge updated fields
+        Object.assign(currentDonor, payload);
+        renderDonorProfile(currentDonor);
+        renderEmergencyFeed();
+        toggleEditProfileForm(false);
+        showAlert("Profile updated successfully!", "success");
+      } catch (err) {
+        showAlert(err.message, "danger");
+      } finally {
+        spinner.style.display = "none";
+        btn.disabled = false;
+      }
+    }
+
+    // Create donor profile when unlinked (404)
+    async function handleCreateDonorProfile(event) {
+      event.preventDefault();
+      const spinner = document.getElementById("create-donor-spinner");
+      const btn = document.getElementById("btn-submit-create-donor");
+      spinner.style.display = "inline-block";
+      btn.disabled = true;
+
+      const payload = {
+        name: document.getElementById("create-name").value.trim(),
+        blood_group: document.getElementById("create-blood-group").value,
+        phone: document.getElementById("create-phone").value.trim(),
+        location: document.getElementById("create-location").value.trim(),
+        age: parseInt(document.getElementById("create-age").value, 10),
+        gender: document.getElementById("create-gender").value,
+        weight: parseFloat(document.getElementById("create-weight").value),
+        last_donation_date: document.getElementById("create-last-donation").value || null,
+        medical_status: document.getElementById("create-medical-status").value.trim() || "Eligible",
+        availability: 1
+      };
+
+      try {
+        const res = await fetch("/donors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to create donor profile.");
+        }
+
+        showAlert("Voluntary donor profile successfully registered! Welcome to BloodLink.", "success");
+        await loadDonorProfile();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      } finally {
+        spinner.style.display = "none";
+        btn.disabled = false;
+      }
+    }
+
+    // Load urgent emergency requests
+    async function loadEmergencyFeed() {
+      try {
+        const res = await fetch("/emergency?status=ACTIVE", { credentials: "same-origin" });
+        if (res.ok) {
+          activeEmergencyRequests = await res.json();
+          renderEmergencyFeed();
+        }
+      } catch (err) {
+        console.warn("Could not fetch emergency requests:", err);
+      }
+    }
+
+    // Load my submitted donation offers
+    async function loadDonorOffers() {
+      try {
+        const res = await fetch("/donor/me/offers", { credentials: "same-origin" });
+        if (res.ok) {
+          myOffers = await res.json();
+          myOffersByEmergencyId = {};
+          (myOffers || []).forEach(o => {
+            if (o.emergency_request_id) {
+              if (!myOffersByEmergencyId[o.emergency_request_id] || ['PENDING', 'ACCEPTED'].includes(o.status)) {
+                myOffersByEmergencyId[o.emergency_request_id] = o;
+              }
+            }
+          });
+          renderMyOffers();
+          renderEmergencyFeed();
+        }
+      } catch (err) {
+        console.warn("Could not fetch donor offers:", err);
+      }
+    }
+
+    function renderMyOffers() {
+      const tbody = document.getElementById("tbody-my-offers");
+      if (!tbody) return;
+
+      if (!myOffers || !myOffers.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+              You haven't submitted any donation offers yet. Eligible emergency requests appear in the feed above.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = myOffers.map(o => {
+        const statusUpper = (o.status || "PENDING").toUpperCase();
+        let statusClass = "pill-normal";
+        let statusLabel = statusUpper;
+        if (statusUpper === "PENDING") {
+          statusClass = "pill-high";
+          statusLabel = "⏳ PENDING";
+        } else if (statusUpper === "ACCEPTED") {
+          statusClass = "pill-low";
+          statusLabel = "✅ ACCEPTED";
+        } else if (statusUpper === "DECLINED") {
+          statusLabel = "❌ DECLINED";
+        } else if (statusUpper === "CANCELLED") {
+          statusLabel = "⚪ CANCELLED";
+        }
+
+        const hospitalText = o.hospital_name ? `${o.hospital_name} (${o.hospital_city || ''})` : `Facility #${o.hospital_id || 'N/A'}`;
+        const consentText = o.donor_contact_consent_at ? '<span style="color: #047857; font-weight: 600; font-size: 0.85rem;">✓ Granted</span>' : '<span style="color: var(--text-muted); font-size: 0.85rem;">Withheld</span>';
+        const dateText = formatDate(o.created_at);
+
+        let actionCell = '<span style="color: var(--text-muted); font-size: 0.85rem;">--</span>';
+        if (statusUpper === "PENDING") {
+          actionCell = `<button type="button" class="btn btn-secondary btn-sm" onclick="cancelMyOffer(${o.request_id})">Cancel</button>`;
+        }
+
+        return `
+          <tr>
+            <td><strong>#${o.request_id}</strong></td>
+            <td><a href="#donor-emergency-feed-card" style="font-weight: 600; text-decoration: none; color: var(--primary-dark-red);">Emergency #${o.emergency_request_id || 'N/A'}</a></td>
+            <td><span style="font-weight: 800; color: var(--primary-dark-red);">${o.blood_group_required}</span></td>
+            <td><strong>${o.units_required}</strong> Units</td>
+            <td>${hospitalText}</td>
+            <td><span class="dashboard-pill ${statusClass}">${statusLabel}</span></td>
+            <td>${consentText}</td>
+            <td style="color: var(--text-muted); font-size: 0.85rem;">${dateText}</td>
+            <td>${actionCell}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function renderEmergencyFeed() {
+      const tbody = document.getElementById("tbody-emergency-feed");
+      if (!tbody) return;
+      const filterCompatible = document.getElementById("filter-compatible-only").checked;
+      const myBlood = currentDonor ? currentDonor.blood_group : "";
+      const compatibleList = DONOR_COMPATIBILITY[myBlood] || [];
+
+      let list = activeEmergencyRequests || [];
+      if (filterCompatible && myBlood) {
+        list = list.filter(req => compatibleList.includes(req.blood_group_required));
+      }
+
+      if (!list.length) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+              ${filterCompatible ? "No active emergency requests match your blood group right now." : "No active emergency requests currently in the network."}
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const isAvailable = currentDonor && (currentDonor.availability === 1 || currentDonor.availability === true || currentDonor.availability === "1");
+
+      tbody.innerHTML = list.map(req => {
+        const hospital = hospitalsMap[req.hospital_id];
+        const hospitalName = hospital ? `${hospital.hospital_name} (${hospital.city || ''})` : `Facility #${req.hospital_id || 'N/A'}`;
+        const isMatch = myBlood && compatibleList.includes(req.blood_group_required);
+        const urgencyClass = `pill-${(req.emergency_level || 'normal').toLowerCase()}`;
+
+        // Existing offer check
+        const existingOffer = myOffersByEmergencyId[req.request_id];
+        let actionHtml = "";
+
+        if (existingOffer) {
+          const statusUpper = (existingOffer.status || "PENDING").toUpperCase();
+          if (statusUpper === "PENDING") {
+            actionHtml = `<span class="dashboard-pill pill-normal" style="background: rgba(245, 158, 11, 0.15); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.4); font-size: 0.8rem; font-weight: 700;">⏳ Offer Pending</span>`;
+          } else if (statusUpper === "ACCEPTED") {
+            actionHtml = `<span class="dashboard-pill pill-low" style="background: rgba(16, 185, 129, 0.15); color: #047857; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.8rem; font-weight: 700;">✅ Offer Accepted</span>`;
+          } else if (statusUpper === "DECLINED") {
+            actionHtml = `<span class="dashboard-pill" style="background: rgba(239, 68, 68, 0.12); color: #b91c1c; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.8rem;">❌ Declined</span>`;
+          } else if (statusUpper === "CANCELLED") {
+            actionHtml = `<span class="dashboard-pill" style="background: rgba(156, 163, 175, 0.15); color: #4b5563; border: 1px solid rgba(156, 163, 175, 0.3); font-size: 0.8rem;">⚪ Cancelled</span>`;
+          } else {
+            actionHtml = `<span class="dashboard-pill">${statusUpper}</span>`;
+          }
+        } else {
+          if (!currentDonor) {
+            actionHtml = `<span style="color: var(--text-muted); font-size: 0.8rem;">Profile Required</span>`;
+          } else if (!isAvailable) {
+            actionHtml = `<span style="color: var(--text-muted); font-size: 0.8rem;">Resting (Unavailable)</span>`;
+          } else if (!isMatch) {
+            actionHtml = `<span style="color: var(--text-muted); font-size: 0.8rem;">Incompatible</span>`;
+          } else {
+            actionHtml = `<button type="button" class="btn btn-primary btn-sm" id="btn-offer-${req.request_id}" onclick="openOfferModal(${req.request_id})" style="white-space: nowrap;">🤝 Offer to Donate</button>`;
+          }
+        }
+
+        return `
+          <tr>
+            <td><strong>#${req.request_id}</strong></td>
+            <td>
+              <span style="font-weight: 800; color: var(--primary-dark-red); font-size: 1.1rem;">
+                ${req.blood_group_required}
+              </span>
+            </td>
+            <td><strong>${req.units_required}</strong> Units</td>
+            <td>
+              <span class="dashboard-pill ${urgencyClass}">
+                ${req.emergency_level || 'NORMAL'}
+              </span>
+            </td>
+            <td>${hospitalName}</td>
+            <td style="color: var(--text-muted); font-size: 0.85rem;">
+              ${req.request_date ? formatDate(req.request_date) : 'Recent'}
+            </td>
+            <td>
+              ${isMatch ? '<span class="compatible-tag">🌟 Compatible Match</span>' : '<span style="color: var(--text-light); font-size: 0.8rem;">General Request</span>'}
+            </td>
+            <td>
+              ${actionHtml}
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function openOfferModal(requestId) {
+      const req = (activeEmergencyRequests || []).find(r => r.request_id === requestId);
+      if (!req) return;
+      selectedEmergencyForOffer = req;
+
+      const hospital = hospitalsMap[req.hospital_id];
+      const hospitalName = hospital ? `${hospital.hospital_name} (${hospital.city || ''})` : `Facility #${req.hospital_id || 'N/A'}`;
+
+      const detailsDiv = document.getElementById("modal-offer-details");
+      detailsDiv.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.5rem;">
+          <div><strong>Request:</strong> #${req.request_id}</div>
+          <div><strong>Required Blood:</strong> <span style="font-weight: 800; color: var(--primary-dark-red);">${req.blood_group_required}</span></div>
+          <div><strong>Units Needed:</strong> ${req.units_required} Unit(s)</div>
+          <div><strong>Urgency:</strong> <span class="dashboard-pill pill-${(req.emergency_level || 'normal').toLowerCase()}">${req.emergency_level || 'NORMAL'}</span></div>
+        </div>
+        <div><strong>Admitting Facility:</strong> ${hospitalName}</div>
+      `;
+
+      // Clear previous error inside modal
+      const errBox = document.getElementById("modal-offer-error");
+      const errMsg = document.getElementById("modal-offer-error-msg");
+      if (errBox) errBox.style.display = "none";
+      if (errMsg) errMsg.textContent = "";
+
+      document.getElementById("modal-offer-notes").value = "";
+      document.getElementById("modal-offer-consent").checked = true;
+
+      const btn = document.getElementById("btn-submit-offer");
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "🚀 Confirm & Send Offer";
+      }
+
+      document.getElementById("modal-offer-confirm").style.display = "flex";
+    }
+
+    function closeOfferModal() {
+      document.getElementById("modal-offer-confirm").style.display = "none";
+      const errBox = document.getElementById("modal-offer-error");
+      const errMsg = document.getElementById("modal-offer-error-msg");
+      if (errBox) errBox.style.display = "none";
+      if (errMsg) errMsg.textContent = "";
+      selectedEmergencyForOffer = null;
+    }
+
+    async function submitDonationOffer(event) {
+      if (event && typeof event.preventDefault === "function") {
+        event.preventDefault();
+      }
+      if (!selectedEmergencyForOffer) return;
+
+      const errBox = document.getElementById("modal-offer-error");
+      const errMsg = document.getElementById("modal-offer-error-msg");
+      if (errBox) errBox.style.display = "none";
+      if (errMsg) errMsg.textContent = "";
+
+      const btn = document.getElementById("btn-submit-offer");
+      const consent = document.getElementById("modal-offer-consent").checked;
+      const notes = document.getElementById("modal-offer-notes").value.trim();
+
+      // Prevent duplicate submissions while in-flight
+      btn.disabled = true;
+      btn.textContent = "Submitting Offer...";
+
+      try {
+        const res = await fetch("/donation-requests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            emergency_request_id: selectedEmergencyForOffer.request_id,
+            consent_to_contact: consent,
+            clinical_notes: notes
+          })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to submit donation offer.");
+        }
+
+        // Close modal and show success alert on dashboard only upon successful response
+        closeOfferModal();
+        showAlert("Donation offer submitted successfully! The recipient has been notified.", "success");
+        await loadDonorOffers();
+        await loadEmergencyFeed();
+      } catch (err) {
+        // Display clear error inside modal without scrolling page or closing modal
+        if (errBox && errMsg) {
+          errMsg.textContent = err.message || "Failed to submit donation offer.";
+          errBox.style.display = "block";
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "🚀 Confirm & Send Offer";
+      }
+    }
+
+    async function cancelMyOffer(offerId) {
+      if (!confirm("Are you sure you want to withdraw/cancel this donation offer?")) return;
+
+      try {
+        const res = await fetch(`/donation-requests/${offerId}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ status: "CANCELLED" })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to cancel donation offer.");
+        }
+
+        showAlert(`Offer #${offerId} has been successfully cancelled.`, "success");
+        await loadDonorOffers();
+        await loadEmergencyFeed();
+      } catch (err) {
+        showAlert(err.message, "danger");
+      }
+    }
+
+    function formatDate(raw) {
+      if (!raw) return "--";
+      try {
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return raw;
+        return d.toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" });
+      } catch {
+        return raw;
+      }
+    }
+
+    function toDateInputValue(raw) {
+      if (!raw) return "";
+      try {
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return "";
+        return d.toISOString().split("T")[0];
+      } catch {
+        return "";
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // =========================================
+    // DONOR CAMPAIGN FUNCTIONS
+    // =========================================
+    let donorCampaigns = [];
+    let donorCampaignFilter = 'ALL';
+    let donorCampaignSearch = '';
+
+    async function loadDonorCampaigns() {
+      const container = document.getElementById("donor-campaigns-container");
+      if (!container) return;
+      try {
+        const res = await fetch("/campaigns?status=ALL", { credentials: "same-origin" });
+        if (res.ok) {
+          donorCampaigns = await res.json();
+          renderDonorCampaigns();
+        } else {
+          container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 2rem;">Unable to load campaigns.</div>`;
+        }
+      } catch (e) {
+        console.warn("Could not load donor campaigns:", e);
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 2rem;">Unable to load campaigns.</div>`;
+      }
+    }
+
+    function setDonorCampaignFilter(filter) {
+      donorCampaignFilter = filter;
+      document.querySelectorAll("#donor-campaign-filter-tabs .campaign-filter-btn").forEach(btn => {
+        if (btn.getAttribute("data-filter") === filter) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+      renderDonorCampaigns();
+    }
+
+    function handleDonorCampaignSearch() {
+      donorCampaignSearch = (document.getElementById("donor-campaign-search").value || "").trim().toLowerCase();
+      renderDonorCampaigns();
+    }
+
+    function renderDonorCampaigns() {
+      const container = document.getElementById("donor-campaigns-container");
+      if (!container) return;
+
+      const filtered = donorCampaigns.filter(c => {
+        const eff = (c.display_status || c.status || "").toUpperCase();
+        if (donorCampaignFilter !== 'ALL') {
+          if (donorCampaignFilter === 'UPCOMING' && eff !== 'UPCOMING' && eff !== 'PLANNED') return false;
+          if (donorCampaignFilter === 'ONGOING' && eff !== 'ONGOING') return false;
+          if (donorCampaignFilter === 'COMPLETED' && eff !== 'COMPLETED') return false;
+          if (donorCampaignFilter === 'CANCELLED' && eff !== 'CANCELLED') return false;
+        }
+        if (donorCampaignSearch) {
+          const name = (c.campaign_name || "").toLowerCase();
+          const loc = (c.location || "").toLowerCase();
+          const desc = (c.description || "").toLowerCase();
+          if (!name.includes(donorCampaignSearch) && !loc.includes(donorCampaignSearch) && !desc.includes(donorCampaignSearch)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 2.5rem; background: var(--bg-subtle); border-radius: var(--radius-md);">
+            No donation campaigns currently match the selected criteria.
+          </div>
+        `;
+        return;
+      }
+
+      function getBadge(status, displayStatus) {
+        const eff = (displayStatus || status || "UPCOMING").toUpperCase();
+        if (eff === "ONGOING") return '<span class="dashboard-pill pill-status-ongoing">🟢 Ongoing</span>';
+        if (eff === "UPCOMING" || eff === "PLANNED") return '<span class="dashboard-pill pill-status-upcoming">🗓️ Upcoming</span>';
+        if (eff === "COMPLETED") return '<span class="dashboard-pill pill-status-completed">✅ Completed</span>';
+        if (eff === "CANCELLED") return '<span class="dashboard-pill pill-status-cancelled">🚫 Cancelled</span>';
+        return `<span class="dashboard-pill pill-status-upcoming">${eff}</span>`;
+      }
+
+      function formatDt(dtStr) {
+        if (!dtStr) return "N/A";
+        try {
+          const d = new Date(dtStr);
+          if (isNaN(d.getTime())) return dtStr;
+          return d.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+        } catch (e) {
+          return dtStr;
+        }
+      }
+
+      container.innerHTML = `
+        <div class="campaign-grid">
+          ${filtered.map(c => `
+            <div class="campaign-card">
+              <div>
+                <div class="campaign-card-header">
+                  <h3 class="campaign-card-title">${escapeHtml(c.campaign_name)}</h3>
+                  ${getBadge(c.status, c.display_status)}
+                </div>
+                ${c.description ? `<p class="campaign-card-desc">${escapeHtml(c.description)}</p>` : '<p class="campaign-card-desc" style="font-style: italic; color: var(--text-light);">No additional description provided.</p>'}
+              </div>
+              <div class="campaign-card-meta">
+                <div class="campaign-meta-item">
+                  <span>📍</span>
+                  <span><strong>Venue:</strong> ${escapeHtml(c.location)}</span>
+                </div>
+                <div class="campaign-meta-item">
+                  <span>📅</span>
+                  <span><strong>Starts:</strong> ${formatDt(c.start_date_iso || c.start_date)}</span>
+                </div>
+                <div class="campaign-meta-item">
+                  <span>⏰</span>
+                  <span><strong>Ends:</strong> ${formatDt(c.end_date_iso || c.end_date)}</span>
+                </div>
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    // Auto-initialize on DOM ready
+    document.addEventListener("DOMContentLoaded", () => {
+      loadDonorProfile();
+    });
+  </script>
+</body>
+</html>
